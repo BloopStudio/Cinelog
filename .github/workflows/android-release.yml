@@ -1,6 +1,7 @@
-name: Android release APK
+name: Android release build
 
-# Construit un APK "release" de CinéLog et publie une GitHub Release à
+# Construit un APK et un AAB (App Bundle, requis pour le Play Store) "release"
+# de CinéLog et publie une GitHub Release à
 # chaque push sur main (une "version" = un commit, voir versionCode
 # ci-dessous) et manuellement (workflow_dispatch). Les pushs qui ne
 # touchent que la documentation ne déclenchent pas de build.
@@ -80,28 +81,32 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Build release APK
+      - name: Build release APK and AAB
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease bundleRelease --no-daemon
 
-      - name: Rename APK
+      - name: Collect build outputs
         run: |
           mkdir -p out
           cp android/app/build/outputs/apk/release/app-release.apk \
             "out/CineLog-${{ env.ANDROID_VERSION_CODE }}.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab \
+            "out/CineLog-${{ env.ANDROID_VERSION_CODE }}.aab"
 
-      - name: Upload APK artifact
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: cinelog-release-apk
-          path: out/*.apk
+          name: cinelog-release-${{ env.ANDROID_VERSION_CODE }}
+          path: |
+            out/*.apk
+            out/*.aab
 
       - name: Create GitHub Release
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v${{ env.ANDROID_VERSION_CODE }}" out/*.apk \
+          gh release create "v${{ env.ANDROID_VERSION_CODE }}" out/*.apk out/*.aab \
             --title "CinéLog v${{ env.ANDROID_VERSION_CODE }}" \
             --target "${{ github.sha }}" \
             --generate-notes
