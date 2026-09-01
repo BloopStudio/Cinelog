@@ -15,6 +15,9 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+permissions:
+  contents: write # nécessaire pour créer une GitHub Release sur les tags
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -75,6 +78,6 @@ jobs:
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: out/*.apk
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" out/*.apk --title "${{ github.ref_name }}" --generate-notes
