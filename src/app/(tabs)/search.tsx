@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  SafeAreaView,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { MovieCard } from "@/components/MovieCard";

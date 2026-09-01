@@ -54,3 +54,13 @@ export async function getDetails(mediaType: MediaType, id: number): Promise<TMDB
   const data = await tmdbFetch<TMDBDetails>(`/${mediaType}/${id}`);
   return { ...data, media_type: mediaType };
 }
+
+export async function getTrending(): Promise<TMDBSearchResult[]> {
+  const data = await tmdbFetch<{ results: (TMDBSearchResult & { media_type: string })[] }>(
+    "/trending/all/week"
+  );
+
+  return data.results.filter(
+    (item): item is TMDBSearchResult => item.media_type === "movie" || item.media_type === "tv"
+  );
+}
