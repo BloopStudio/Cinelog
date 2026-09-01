@@ -51,7 +51,9 @@ export async function searchMulti(query: string): Promise<TMDBSearchResult[]> {
 }
 
 export async function getDetails(mediaType: MediaType, id: number): Promise<TMDBDetails> {
-  const data = await tmdbFetch<TMDBDetails>(`/${mediaType}/${id}`);
+  const data = await tmdbFetch<TMDBDetails>(`/${mediaType}/${id}`, {
+    append_to_response: "credits",
+  });
   return { ...data, media_type: mediaType };
 }
 

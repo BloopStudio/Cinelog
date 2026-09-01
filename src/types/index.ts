@@ -14,12 +14,20 @@ export interface TMDBSearchResult {
   vote_average: number;
 }
 
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
 export interface TMDBDetails extends TMDBSearchResult {
   genres: { id: number; name: string }[];
   runtime?: number;
   number_of_seasons?: number;
   number_of_episodes?: number;
   tagline: string;
+  credits?: { cast: CastMember[] };
 }
 
 export interface WatchlistItem {

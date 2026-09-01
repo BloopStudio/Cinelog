@@ -170,6 +170,32 @@ export default function DetailsScreen() {
             </Text>
           </View>
 
+          {details.credits?.cast?.length ? (
+            <View className="mt-5">
+              <Text className="mb-2 text-sm font-semibold text-text-secondary">Casting</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5 px-5">
+                <View className="flex-row gap-3">
+                  {details.credits.cast.slice(0, 15).map((actor) => (
+                    <View key={actor.id} className="w-20">
+                      <Image
+                        source={posterUrl(actor.profile_path, "w185") ?? undefined}
+                        style={{ width: 80, height: 80, borderRadius: 40 }}
+                        contentFit="cover"
+                        className="bg-surface-alt"
+                      />
+                      <Text numberOfLines={2} className="mt-1.5 text-xs font-semibold text-text-primary">
+                        {actor.name}
+                      </Text>
+                      <Text numberOfLines={1} className="text-[11px] text-text-secondary">
+                        {actor.character}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          ) : null}
+
           {listItem ? (
             <Pressable
               onPress={async () => {
