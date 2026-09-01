@@ -107,7 +107,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v${{ env.ANDROID_VERSION_CODE }}" out/*.apk out/*.aab \
-            --title "CinéLog v${{ env.ANDROID_VERSION_CODE }}" \
+          TAG="v${{ env.ANDROID_VERSION_CODE }}"
+          gh release view "$TAG" >/dev/null 2>&1 && gh release delete "$TAG" --yes --cleanup-tag
+          gh release create "$TAG" out/*.apk out/*.aab \
+            --title "CinéLog $TAG" \
             --target "${{ github.sha }}" \
             --generate-notes
