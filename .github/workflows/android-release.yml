@@ -113,3 +113,22 @@ jobs:
             --title "CinéLog $TAG" \
             --target "${{ github.sha }}" \
             --generate-notes
+
+      - name: Check Play Store secret
+        run: echo "HAS_PLAY_STORE=${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON != '' }}" >> "$GITHUB_ENV"
+
+      - name: Publish to Play Store (test fermé)
+        # Uniquement pour un build signé release (pas debug) avec le compte
+        # de service configuré. Piste "alpha" = le nom interne historique
+        # de la piste "Test fermé" par défaut sur la Play Console — si tu as
+        # renommé/créé une autre piste fermée, remplace la valeur ci-dessous
+        # par son nom exact (visible dans l'URL de la piste sur la Play
+        # Console).
+        if: env.HAS_KEYSTORE == 'true' && env.HAS_PLAY_STORE == 'true'
+        uses: google-github-actions/upload-google-play@v2
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.bloopstudio.cinelog
+          releaseFiles: out/*.aab
+          track: alpha
+          status: completed

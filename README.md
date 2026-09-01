@@ -106,6 +106,7 @@ Dans *Settings → Secrets and variables → Actions* du dépôt :
 | `ANDROID_KEYSTORE_PASSWORD` | Si keystore fourni | Mot de passe du keystore |
 | `ANDROID_KEY_ALIAS` | Si keystore fourni | Alias de la clé |
 | `ANDROID_KEY_PASSWORD` | Si keystore fourni | Mot de passe de la clé |
+| `PLAY_STORE_SERVICE_ACCOUNT_JSON` | Non | Publication automatique sur le Play Store (voir section ci-dessous) |
 
 \* Sans keystore, l'APK release est signé avec la clé de debug par défaut :
 il s'installe et fonctionne pour tester, mais **n'est pas valable pour une
@@ -125,14 +126,23 @@ Colle le contenu de `cinelog-release.keystore.base64` dans le secret
 `ANDROID_KEYSTORE_BASE64`, puis renseigne les mots de passe/alias choisis
 lors de la génération dans les autres secrets.
 
-## Publication sur le Play Store (à venir)
+## Publication automatique sur le Play Store
 
-La prochaine étape ajoutera l'upload automatique du build (AAB) sur le
-Google Play Store via l'API Google Play Developer, ce qui nécessitera :
+Une fois `PLAY_STORE_SERVICE_ACCOUNT_JSON` configuré, chaque build signé
+(release, pas debug) est automatiquement envoyé sur la piste **Test fermé**
+de la Play Console — plus besoin de télécharger/uploader l'AAB à la main.
 
-- un compte **Google Play Console** (compte développeur, avec l'app créée et
-  au moins un premier envoi manuel, obligatoire pour toute nouvelle app)
-- un **compte de service Google Cloud** avec accès à l'API Play Console, dont
-  la clé JSON sera stockée en secret GitHub
+Prérequis (une seule fois) :
 
-Aucun compte supplémentaire ne sera nécessaire pour les utilisateurs finaux.
+1. Un compte **Google Play Console** avec l'app CinéLog créée et **au moins
+   un premier envoi manuel** effectué (obligatoire pour toute nouvelle app —
+   déjà fait pour CinéLog)
+2. Un **compte de service Google Cloud** (*Play Console → Configuration →
+   Accès API*) avec le rôle *Release manager* sur l'app, dont la clé JSON va
+   dans le secret `PLAY_STORE_SERVICE_ACCOUNT_JSON`
+
+Le workflow cible la piste `alpha` (le nom interne de "Test fermé" par
+défaut) — si tu utilises une autre piste fermée, ajuste la valeur `track`
+dans `.github/workflows/android-release.yml`.
+
+Aucun compte supplémentaire n'est nécessaire pour les utilisateurs finaux.
