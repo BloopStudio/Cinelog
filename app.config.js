@@ -15,12 +15,12 @@ module.exports = {
     userInterfaceStyle: "dark",
     backgroundColor: "#0B0F14",
     ios: {
-      bundleIdentifier: "com.thedemon78.cinelog",
+      bundleIdentifier: "com.bloopstudio.cinelog",
       icon: "./assets/images/icon.png",
       supportsTablet: true,
     },
     android: {
-      package: "com.thedemon78.cinelog",
+      package: "com.bloopstudio.cinelog",
       versionCode: androidVersionCode,
       adaptiveIcon: {
         backgroundColor: "#0B0F14",
