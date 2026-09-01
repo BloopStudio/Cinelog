@@ -49,4 +49,5 @@ export interface WatchlistItem {
   status: WatchStatus;
   rating: number;
   addedAt: string;
+  genres?: string[];
 }

@@ -64,6 +64,7 @@ export default function DetailsScreen() {
         releaseDate: details.release_date ?? details.first_air_date ?? "",
         status,
         rating: 0,
+        genres: details.genres?.map((genre) => genre.name) ?? [],
       });
     }
   };
@@ -82,6 +83,7 @@ export default function DetailsScreen() {
         releaseDate: details.release_date ?? details.first_air_date ?? "",
         status: "to_watch",
         rating,
+        genres: details.genres?.map((genre) => genre.name) ?? [],
       });
     }
   };

@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -25,7 +25,14 @@ export default function WatchlistScreen() {
   const { items, isLoading, removeItem } = useWatchlist();
   const [filter, setFilter] = useState<Filter>("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
+  const [genreFilter, setGenreFilter] = useState<string | "all">("all");
   const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
+
+  const availableGenres = useMemo(() => {
+    const genres = new Set<string>();
+    items.forEach((item) => item.genres?.forEach((genre) => genres.add(genre)));
+    return Array.from(genres).sort((a, b) => a.localeCompare(b));
+  }, [items]);
 
   useEffect(() => {
     getTrending()
@@ -39,8 +46,9 @@ export default function WatchlistScreen() {
     );
     return sorted
       .filter((item) => filter === "all" || item.status === filter)
-      .filter((item) => mediaTypeFilter === "all" || item.mediaType === mediaTypeFilter);
-  }, [items, filter, mediaTypeFilter]);
+      .filter((item) => mediaTypeFilter === "all" || item.mediaType === mediaTypeFilter)
+      .filter((item) => genreFilter === "all" || item.genres?.includes(genreFilter));
+  }, [items, filter, mediaTypeFilter, genreFilter]);
 
   const discoverItems = useMemo(() => {
     const seenOrInProgress = new Set(
@@ -79,7 +87,7 @@ export default function WatchlistScreen() {
         })}
       </View>
 
-      <View className="flex-row gap-2 px-4 pb-3 pt-2">
+      <View className="flex-row gap-2 px-4 pb-2 pt-2">
         {MEDIA_TYPE_FILTERS.map(({ value, label }) => {
           const active = mediaTypeFilter === value;
           return (
@@ -101,6 +109,50 @@ export default function WatchlistScreen() {
           );
         })}
       </View>
+
+      {availableGenres.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="pb-3"
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+        >
+          <Pressable
+            onPress={() => setGenreFilter("all")}
+            className={`rounded-full border px-3 py-1 ${
+              genreFilter === "all" ? "border-accent bg-accent/10" : "border-border bg-transparent"
+            }`}
+          >
+            <Text
+              className={`text-xs font-semibold ${
+                genreFilter === "all" ? "text-accent" : "text-text-secondary"
+              }`}
+            >
+              Tous genres
+            </Text>
+          </Pressable>
+          {availableGenres.map((genre) => {
+            const active = genreFilter === genre;
+            return (
+              <Pressable
+                key={genre}
+                onPress={() => setGenreFilter(active ? "all" : genre)}
+                className={`rounded-full border px-3 py-1 ${
+                  active ? "border-accent bg-accent/10" : "border-border bg-transparent"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-semibold ${
+                    active ? "text-accent" : "text-text-secondary"
+                  }`}
+                >
+                  {genre}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
