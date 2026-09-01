@@ -18,6 +18,7 @@ on:
     paths-ignore:
       - "**.md"
       - "LICENSE"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
