@@ -33,8 +33,11 @@ jobs:
       - name: Write TMDB token
         run: echo "EXPO_PUBLIC_TMDB_ACCESS_TOKEN=${{ secrets.TMDB_ACCESS_TOKEN }}" >> .env
 
+      - name: Check keystore secret
+        run: echo "HAS_KEYSTORE=${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}" >> "$GITHUB_ENV"
+
       - name: Decode keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: env.HAS_KEYSTORE == 'true'
         run: echo "would decode keystore here"
 
       - name: Fake build artifact
