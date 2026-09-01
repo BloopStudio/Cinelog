@@ -16,7 +16,7 @@ module.exports = {
     backgroundColor: "#0B0F14",
     ios: {
       bundleIdentifier: "com.thedemon78.cinelog",
-      icon: "./assets/expo.icon",
+      icon: "./assets/images/icon.png",
       supportsTablet: true,
     },
     android: {
