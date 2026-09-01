@@ -82,7 +82,7 @@ jobs:
 
       - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --parallel
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Rename APK
         run: |
