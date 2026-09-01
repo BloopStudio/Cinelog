@@ -1,5 +1,5 @@
-// Config dynamique (au lieu d'app.json) pour pouvoir calculer le versionCode
-// Android à partir du nombre de commits git au moment du build CI.
+// Config dynamique (au lieu d'app.json) pour pouvoir calculer la version
+// à partir du nombre de commits git au moment du build CI.
 // En local, ANDROID_VERSION_CODE n'est pas défini : on retombe sur 1.
 const androidVersionCode = Number(process.env.ANDROID_VERSION_CODE) || 1;
 
@@ -8,7 +8,7 @@ module.exports = {
   expo: {
     name: "CinéLog",
     slug: "cinelog",
-    version: "1.0.0",
+    version: String(androidVersionCode),
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "cinelog",
