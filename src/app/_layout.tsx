@@ -19,6 +19,15 @@ export default function RootLayout() {
               name="details/[mediaType]/[id]"
               options={{ headerShown: true, headerTitle: "", headerTransparent: true }}
             />
+            <Stack.Screen
+              name="actor/[id]"
+              options={{
+                headerShown: true,
+                headerTitle: "",
+                headerStyle: { backgroundColor: "#0B0F14" },
+                headerTintColor: "#F5F7FA",
+              }}
+            />
           </Stack>
         </WatchlistProvider>
       </SafeAreaProvider>

@@ -21,6 +21,15 @@ export interface CastMember {
   profile_path: string | null;
 }
 
+export interface TMDBPersonResult {
+  id: number;
+  media_type: "person";
+  name: string;
+  profile_path: string | null;
+}
+
+export type SearchResult = TMDBSearchResult | TMDBPersonResult;
+
 export interface TMDBDetails extends TMDBSearchResult {
   genres: { id: number; name: string }[];
   runtime?: number;

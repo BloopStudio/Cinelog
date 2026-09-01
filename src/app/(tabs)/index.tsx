@@ -9,15 +9,22 @@ import { PosterTile } from "@/components/PosterTile";
 import { STATUS_LABELS } from "@/constants/status";
 import { useWatchlist } from "@/context/WatchlistContext";
 import { getTrending } from "@/services/tmdb";
-import type { TMDBSearchResult, WatchStatus } from "@/types";
+import type { MediaType, TMDBSearchResult, WatchStatus } from "@/types";
 
 type Filter = "all" | WatchStatus;
+type MediaTypeFilter = "all" | MediaType;
 
 const FILTERS: Filter[] = ["all", "watching", "to_watch", "watched"];
+const MEDIA_TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
+  { value: "all", label: "Tout" },
+  { value: "movie", label: "Films" },
+  { value: "tv", label: "Séries" },
+];
 
 export default function WatchlistScreen() {
   const { items, isLoading, removeItem } = useWatchlist();
   const [filter, setFilter] = useState<Filter>("all");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
 
   useEffect(() => {
@@ -30,9 +37,10 @@ export default function WatchlistScreen() {
     const sorted = [...items].sort(
       (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
     );
-    if (filter === "all") return sorted;
-    return sorted.filter((item) => item.status === filter);
-  }, [items, filter]);
+    return sorted
+      .filter((item) => filter === "all" || item.status === filter)
+      .filter((item) => mediaTypeFilter === "all" || item.mediaType === mediaTypeFilter);
+  }, [items, filter, mediaTypeFilter]);
 
   const discoverItems = useMemo(() => {
     const seenOrInProgress = new Set(
@@ -50,7 +58,7 @@ export default function WatchlistScreen() {
         <Text className="text-sm text-text-secondary">Ta liste de films et séries</Text>
       </View>
 
-      <View className="flex-row gap-2 px-4 py-3">
+      <View className="flex-row gap-2 px-4 pt-3">
         {FILTERS.map((value) => {
           const active = filter === value;
           return (
@@ -65,6 +73,29 @@ export default function WatchlistScreen() {
                 }`}
               >
                 {value === "all" ? "Tout" : STATUS_LABELS[value]}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View className="flex-row gap-2 px-4 pb-3 pt-2">
+        {MEDIA_TYPE_FILTERS.map(({ value, label }) => {
+          const active = mediaTypeFilter === value;
+          return (
+            <Pressable
+              key={value}
+              onPress={() => setMediaTypeFilter(value)}
+              className={`rounded-full border px-3 py-1 ${
+                active ? "border-accent bg-accent/10" : "border-border bg-transparent"
+              }`}
+            >
+              <Text
+                className={`text-xs font-semibold ${
+                  active ? "text-accent" : "text-text-secondary"
+                }`}
+              >
+                {label}
               </Text>
             </Pressable>
           );

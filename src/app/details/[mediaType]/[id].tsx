@@ -176,7 +176,11 @@ export default function DetailsScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5 px-5">
                 <View className="flex-row gap-3">
                   {details.credits.cast.slice(0, 15).map((actor) => (
-                    <View key={actor.id} className="w-20">
+                    <Pressable
+                      key={actor.id}
+                      onPress={() => router.push(`/actor/${actor.id}`)}
+                      className="w-20"
+                    >
                       <Image
                         source={posterUrl(actor.profile_path, "w185") ?? undefined}
                         style={{ width: 80, height: 80, borderRadius: 40 }}
@@ -189,7 +193,7 @@ export default function DetailsScreen() {
                       <Text numberOfLines={1} className="text-[11px] text-text-secondary">
                         {actor.character}
                       </Text>
-                    </View>
+                    </Pressable>
                   ))}
                 </View>
               </ScrollView>

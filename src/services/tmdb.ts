@@ -1,4 +1,4 @@
-import type { MediaType, TMDBDetails, TMDBSearchResult } from "@/types";
+import type { MediaType, SearchResult, TMDBDetails, TMDBSearchResult } from "@/types";
 
 const BASE_URL = "https://api.themoviedb.org/3";
 const ACCESS_TOKEN = process.env.EXPO_PUBLIC_TMDB_ACCESS_TOKEN;
@@ -37,17 +37,41 @@ async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): 
   return response.json();
 }
 
-export async function searchMulti(query: string): Promise<TMDBSearchResult[]> {
+export async function searchMulti(query: string): Promise<SearchResult[]> {
   if (!query.trim()) return [];
 
-  const data = await tmdbFetch<{ results: (TMDBSearchResult & { media_type: string })[] }>(
+  const data = await tmdbFetch<{ results: (SearchResult & { media_type: string })[] }>(
     "/search/multi",
     { query, include_adult: "false" }
   );
 
   return data.results.filter(
-    (item): item is TMDBSearchResult => item.media_type === "movie" || item.media_type === "tv"
+    (item): item is SearchResult =>
+      item.media_type === "movie" || item.media_type === "tv" || item.media_type === "person"
   );
+}
+
+export async function getPerson(id: number): Promise<{ id: number; name: string; profile_path: string | null }> {
+  return tmdbFetch(`/person/${id}`);
+}
+
+export async function getPersonCredits(id: number): Promise<TMDBSearchResult[]> {
+  const data = await tmdbFetch<{ cast: (TMDBSearchResult & { media_type: string })[] }>(
+    `/person/${id}/combined_credits`
+  );
+
+  const seen = new Set<string>();
+  return data.cast
+    .filter(
+      (item): item is TMDBSearchResult => item.media_type === "movie" || item.media_type === "tv"
+    )
+    .filter((item) => {
+      const key = `${item.media_type}-${item.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
 }
 
 export async function getDetails(mediaType: MediaType, id: number): Promise<TMDBDetails> {

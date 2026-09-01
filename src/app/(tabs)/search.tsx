@@ -12,12 +12,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { MovieCard } from "@/components/MovieCard";
+import { PersonCard } from "@/components/PersonCard";
 import { searchMulti } from "@/services/tmdb";
-import type { TMDBSearchResult } from "@/types";
+import type { SearchResult } from "@/types";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<TMDBSearchResult[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +57,7 @@ export default function SearchScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Titre d'un film ou d'une série..."
+          placeholder="Titre, film, série ou acteur..."
           placeholderTextColor="#9AA5B1"
           autoCapitalize="none"
           autoCorrect={false}
@@ -85,14 +86,22 @@ export default function SearchScreen() {
           data={results}
           keyExtractor={(item) => `${item.media_type}-${item.id}`}
           contentContainerStyle={{ padding: 16 }}
-          renderItem={({ item }) => (
-            <MovieCard
-              title={item.title ?? item.name ?? "Sans titre"}
-              posterPath={item.poster_path}
-              subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
-              onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
-            />
-          )}
+          renderItem={({ item }) =>
+            item.media_type === "person" ? (
+              <PersonCard
+                name={item.name}
+                profilePath={item.profile_path}
+                onPress={() => router.push(`/actor/${item.id}`)}
+              />
+            ) : (
+              <MovieCard
+                title={item.title ?? item.name ?? "Sans titre"}
+                posterPath={item.poster_path}
+                subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
+                onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+              />
+            )
+          }
         />
       )}
     </SafeAreaView>
