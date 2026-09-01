@@ -103,6 +103,31 @@ def draw_feature_graphic(width: int, height: int):
     return img.resize((width, height), Image.LANCZOS)
 
 
+def draw_splash_with_text(mark_size: int, label: str):
+    """Mark on top, a small text label centered below it, transparent bg.
+    Used for the native splash screen (expo-splash-screen only takes a
+    single image, so the label has to be baked in)."""
+    big_mark = mark_size * SS
+    label_h = int(big_mark * 0.16)
+    big_w, big_h = big_mark, big_mark + label_h
+
+    img = Image.new("RGBA", (big_w, big_h), (0, 0, 0, 0))
+    mark = draw_mark(mark_size, ACCENT, PRIMARY, transparent=True).resize(
+        (big_mark, big_mark), Image.LANCZOS
+    )
+    img.paste(mark, (0, 0), mark)
+
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(FONT_PATH, int(label_h * 0.55))
+    bbox = draw.textbbox((0, 0), label, font=font)
+    text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    text_x = (big_w - text_w) // 2 - bbox[0]
+    text_y = big_mark + (label_h - text_h) // 2 - bbox[1]
+    draw.text((text_x, text_y), label, font=font, fill=TEXT_SECONDARY)
+
+    return img.resize((mark_size, mark_size + label_h // SS), Image.LANCZOS)
+
+
 def save(img: Image.Image, name: str, out_dir: str = OUT_DIR):
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
@@ -129,8 +154,8 @@ def main():
     mono = draw_mark(1024, WHITE, WHITE, transparent=True)
     save(mono, "android-icon-monochrome.png")
 
-    # Splash icon (mark only, transparent, moderate size)
-    splash = draw_mark(800, ACCENT, PRIMARY, transparent=True)
+    # Splash icon: mark + "BloopStudio" label below, transparent
+    splash = draw_splash_with_text(800, "BloopStudio")
     save(splash, "splash-icon.png")
 
     # Favicon (on dark background, small)
