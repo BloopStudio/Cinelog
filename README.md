@@ -72,8 +72,67 @@ src/
 - 🗑️ Suppression d'un élément de la liste
 - 💾 Stockage 100% local (AsyncStorage), aucun compte requis
 
-## Publication (à venir)
+## Note sur la clé TMDB
 
-Un workflow GitHub Actions pour la publication automatique sur le Google Play
-Store (build EAS + upload via `eas submit`) sera ajouté dans une prochaine
-étape.
+La clé TMDB (`EXPO_PUBLIC_TMDB_ACCESS_TOKEN`) est **la clé du développeur**,
+intégrée dans l'application au moment du build. Une personne qui installe
+CinéLog depuis le Play Store n'a rien à créer sur TMDB (ni sur aucun autre
+site) : elle télécharge l'app et elle fonctionne directement, comme n'importe
+quelle app qui appelle une API en coulisses.
+
+## Build automatique d'un APK (GitHub Actions)
+
+Le workflow [`.github/workflows/android-release.yml`](.github/workflows/android-release.yml)
+build un **APK release** de CinéLog :
+
+- à chaque push sur `main` → artefact téléchargeable dans l'onglet *Actions*
+  du dépôt (`cinelog-release-apk`)
+- à chaque tag `v*` (ex. `v1.0.0`) → en plus, publie une **GitHub Release**
+  avec l'APK joint
+- manuellement, via *Run workflow*
+
+Le build est **100% local** (Gradle sur le runner GitHub, via `expo prebuild`)
+et ne nécessite **aucun compte Expo/EAS**. Le `versionCode` Android est calculé
+automatiquement à partir du nombre de commits (`git rev-list --count HEAD`).
+
+### Secrets GitHub à configurer
+
+Dans *Settings → Secrets and variables → Actions* du dépôt :
+
+| Secret | Obligatoire | Description |
+| --- | --- | --- |
+| `TMDB_ACCESS_TOKEN` | Oui | Le même token que dans `.env` (voir ci-dessus) |
+| `ANDROID_KEYSTORE_BASE64` | Non* | Keystore de signature encodé en base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | Si keystore fourni | Mot de passe du keystore |
+| `ANDROID_KEY_ALIAS` | Si keystore fourni | Alias de la clé |
+| `ANDROID_KEY_PASSWORD` | Si keystore fourni | Mot de passe de la clé |
+
+\* Sans keystore, l'APK release est signé avec la clé de debug par défaut :
+il s'installe et fonctionne pour tester, mais **n'est pas valable pour une
+publication sur le Play Store**. Pour générer un vrai keystore (à faire une
+seule fois, à conserver précieusement — il doit rester le même à chaque
+publication) :
+
+```bash
+keytool -genkeypair -v -storetype PKCS12 \
+  -keystore cinelog-release.keystore \
+  -alias cinelog -keyalg RSA -keysize 2048 -validity 10000
+
+base64 -w0 cinelog-release.keystore > cinelog-release.keystore.base64
+```
+
+Colle le contenu de `cinelog-release.keystore.base64` dans le secret
+`ANDROID_KEYSTORE_BASE64`, puis renseigne les mots de passe/alias choisis
+lors de la génération dans les autres secrets.
+
+## Publication sur le Play Store (à venir)
+
+La prochaine étape ajoutera l'upload automatique du build (AAB) sur le
+Google Play Store via l'API Google Play Developer, ce qui nécessitera :
+
+- un compte **Google Play Console** (compte développeur, avec l'app créée et
+  au moins un premier envoi manuel, obligatoire pour toute nouvelle app)
+- un **compte de service Google Cloud** avec accès à l'API Play Console, dont
+  la clé JSON sera stockée en secret GitHub
+
+Aucun compte supplémentaire ne sera nécessaire pour les utilisateurs finaux.
