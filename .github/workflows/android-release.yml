@@ -117,6 +117,15 @@ jobs:
       - name: Check Play Store secret
         run: echo "HAS_PLAY_STORE=${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON != '' }}" >> "$GITHUB_ENV"
 
+      - name: Decode Play Store service account
+        # Le secret est encodé en base64 (même convention que le keystore
+        # Android) : l'action ci-dessous veut le JSON brut dans un fichier,
+        # donc on le décode ici plutôt que de le passer tel quel.
+        if: env.HAS_PLAY_STORE == 'true'
+        run: |
+          echo "${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}" | base64 -d > "$RUNNER_TEMP/play-store-service-account.json"
+          echo "PLAY_STORE_SERVICE_ACCOUNT_PATH=$RUNNER_TEMP/play-store-service-account.json" >> "$GITHUB_ENV"
+
       - name: Publish to Play Store (test fermé)
         # Uniquement pour un build signé release (pas debug) avec le compte
         # de service configuré. Piste "alpha" = le nom interne historique
@@ -127,7 +136,7 @@ jobs:
         if: env.HAS_KEYSTORE == 'true' && env.HAS_PLAY_STORE == 'true'
         uses: r0adkll/upload-google-play@v1
         with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          serviceAccountJson: ${{ env.PLAY_STORE_SERVICE_ACCOUNT_PATH }}
           packageName: com.bloopstudio.cinelog
           releaseFiles: out/*.aab
           track: alpha
