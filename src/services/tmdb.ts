@@ -37,18 +37,29 @@ async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): 
   return response.json();
 }
 
-export async function searchMulti(query: string): Promise<SearchResult[]> {
-  if (!query.trim()) return [];
+export interface SearchPage {
+  results: SearchResult[];
+  page: number;
+  totalPages: number;
+}
 
-  const data = await tmdbFetch<{ results: (SearchResult & { media_type: string })[] }>(
-    "/search/multi",
-    { query, include_adult: "false" }
-  );
+export async function searchMulti(query: string, page = 1): Promise<SearchPage> {
+  if (!query.trim()) return { results: [], page: 1, totalPages: 0 };
 
-  return data.results.filter(
-    (item): item is SearchResult =>
-      item.media_type === "movie" || item.media_type === "tv" || item.media_type === "person"
-  );
+  const data = await tmdbFetch<{
+    results: (SearchResult & { media_type: string })[];
+    page: number;
+    total_pages: number;
+  }>("/search/multi", { query, include_adult: "false", page: String(page) });
+
+  return {
+    results: data.results.filter(
+      (item): item is SearchResult =>
+        item.media_type === "movie" || item.media_type === "tv" || item.media_type === "person"
+    ),
+    page: data.page,
+    totalPages: data.total_pages,
+  };
 }
 
 export async function getPerson(id: number): Promise<{ id: number; name: string; profile_path: string | null }> {
