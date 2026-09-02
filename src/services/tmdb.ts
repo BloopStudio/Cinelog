@@ -82,7 +82,11 @@ export async function getPersonCredits(id: number): Promise<TMDBSearchResult[]> 
       seen.add(key);
       return true;
     })
-    .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
+    .sort((a, b) => {
+      const dateA = a.release_date ?? a.first_air_date ?? "";
+      const dateB = b.release_date ?? b.first_air_date ?? "";
+      return dateB.localeCompare(dateA);
+    });
 }
 
 export async function getDetails(mediaType: MediaType, id: number): Promise<TMDBDetails> {
