@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -9,10 +9,22 @@ import { useWatchlist } from "@/context/WatchlistContext";
 import { getTrending } from "@/services/tmdb";
 import type { TMDBSearchResult } from "@/types";
 
+const SCREEN_PADDING = 16;
+const TILE_GAP = 12;
+const MIN_TILE_WIDTH = 100;
+
 export default function DiscoverScreen() {
   const { items } = useWatchlist();
   const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { width } = useWindowDimensions();
+
+  const numColumns = Math.max(
+    3,
+    Math.floor((width - SCREEN_PADDING * 2 + TILE_GAP) / (MIN_TILE_WIDTH + TILE_GAP))
+  );
+  const tileWidth =
+    (width - SCREEN_PADDING * 2 - TILE_GAP * (numColumns - 1)) / numColumns;
 
   useEffect(() => {
     getTrending()
@@ -51,18 +63,20 @@ export default function DiscoverScreen() {
         />
       ) : (
         <FlatList
+          key={numColumns}
           data={discoverItems}
-          numColumns={3}
+          numColumns={numColumns}
           keyExtractor={(item) => `${item.media_type}-${item.id}`}
           removeClippedSubviews={false}
-          contentContainerStyle={{ padding: 16 }}
-          columnWrapperStyle={{ marginBottom: 16 }}
+          contentContainerStyle={{ padding: SCREEN_PADDING }}
+          columnWrapperStyle={{ gap: TILE_GAP, marginBottom: 16 }}
           renderItem={({ item }) => (
             <PosterTile
               title={item.title ?? item.name ?? "Sans titre"}
               posterPath={item.poster_path}
               subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
               onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+              width={tileWidth}
             />
           )}
         />

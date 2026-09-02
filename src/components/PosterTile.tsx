@@ -8,14 +8,15 @@ interface PosterTileProps {
   posterPath: string | null;
   subtitle?: string;
   onPress: () => void;
+  width?: number;
 }
 
-export function PosterTile({ title, posterPath, subtitle, onPress }: PosterTileProps) {
+export function PosterTile({ title, posterPath, subtitle, onPress, width = 112 }: PosterTileProps) {
   return (
-    <Pressable onPress={onPress} className="mr-3 w-28 active:opacity-80">
+    <Pressable onPress={onPress} style={{ width }} className="active:opacity-80">
       <Image
         source={posterUrl(posterPath) ?? undefined}
-        style={{ width: 112, height: 168 }}
+        style={{ width, height: width * 1.5 }}
         contentFit="cover"
         transition={150}
         className="rounded-xl bg-surface-alt"
