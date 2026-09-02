@@ -7,8 +7,13 @@ export function StatusBadge({ status }: { status: WatchStatus }) {
   const colors = STATUS_COLORS[status];
 
   return (
-    <View className={`rounded-full px-2.5 py-1 ${colors.bg}`}>
-      <Text className={`text-xs font-semibold ${colors.text}`}>{STATUS_LABELS[status]}</Text>
+    <View className={`shrink-0 self-start rounded-full px-2.5 py-1 ${colors.bg}`}>
+      <Text
+        numberOfLines={1}
+        className={`shrink-0 text-xs font-semibold ${colors.text}`}
+      >
+        {STATUS_LABELS[status]}
+      </Text>
     </View>
   );
 }

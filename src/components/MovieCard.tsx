@@ -49,7 +49,7 @@ export function MovieCard({
         </View>
 
         <View className="flex-row items-center justify-between">
-          <View className="gap-1.5">
+          <View className="shrink-0 gap-1.5">
             {status ? <StatusBadge status={status} /> : null}
             {rating ? <RatingStars rating={rating} size={14} /> : null}
           </View>

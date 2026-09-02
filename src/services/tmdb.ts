@@ -122,5 +122,13 @@ export async function getTrending(): Promise<TMDBSearchResult[]> {
     (item): item is TMDBSearchResult => item.media_type === "movie" || item.media_type === "tv"
   );
 
-  return shuffle(combined);
+  const seen = new Set<string>();
+  const deduped = combined.filter((item) => {
+    const key = `${item.media_type}-${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return shuffle(deduped);
 }
