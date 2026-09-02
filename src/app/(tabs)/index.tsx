@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
@@ -11,6 +12,7 @@ import type { MediaType, WatchStatus } from "@/types";
 
 type Filter = "all" | WatchStatus;
 type MediaTypeFilter = "all" | MediaType;
+type SortOption = "recent" | "rating" | "title";
 
 const FILTERS: Filter[] = ["all", "watching", "to_watch", "watched"];
 const MEDIA_TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
@@ -18,12 +20,18 @@ const MEDIA_TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
   { value: "movie", label: "Films" },
   { value: "tv", label: "Séries" },
 ];
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "recent", label: "Récents" },
+  { value: "rating", label: "Mieux notés" },
+  { value: "title", label: "Titre A-Z" },
+];
 
 export default function WatchlistScreen() {
   const { items, isLoading, removeItem } = useWatchlist();
   const [filter, setFilter] = useState<Filter>("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const [genreFilter, setGenreFilter] = useState<string | "all">("all");
+  const [sort, setSort] = useState<SortOption>("recent");
 
   const availableGenres = useMemo(() => {
     const genres = new Set<string>();
@@ -32,20 +40,25 @@ export default function WatchlistScreen() {
   }, [items]);
 
   const filteredItems = useMemo(() => {
-    const sorted = [...items].sort(
-      (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
-    );
-    return sorted
+    const filtered = items
       .filter((item) => filter === "all" || item.status === filter)
       .filter((item) => mediaTypeFilter === "all" || item.mediaType === mediaTypeFilter)
       .filter((item) => genreFilter === "all" || item.genres?.includes(genreFilter));
-  }, [items, filter, mediaTypeFilter, genreFilter]);
+
+    return filtered.sort((a, b) => {
+      if (sort === "rating") return (b.rating ?? -1) - (a.rating ?? -1);
+      if (sort === "title") return a.title.localeCompare(b.title);
+      return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+    });
+  }, [items, filter, mediaTypeFilter, genreFilter, sort]);
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <View className="px-4 pb-2 pt-4">
         <Text className="text-2xl font-bold text-text-primary">CinéLog</Text>
-        <Text className="text-sm text-text-secondary">Ta liste de films et séries</Text>
+        <Text className="text-sm text-text-secondary">
+          {filteredItems.length} titre{filteredItems.length > 1 ? "s" : ""} dans ta liste
+        </Text>
       </View>
 
       <View className="gap-3 pb-3 pt-3">
@@ -141,6 +154,32 @@ export default function WatchlistScreen() {
             </ScrollView>
           ) : null}
         </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, alignItems: "center", paddingHorizontal: 16 }}
+        >
+          <Ionicons name="swap-vertical-outline" size={14} color="#9AA5B1" />
+          {SORT_OPTIONS.map(({ value, label }) => {
+            const active = sort === value;
+            return (
+              <Pressable
+                key={value}
+                onPress={() => setSort(value)}
+                className={`rounded-full px-3.5 py-2 ${active ? "bg-accent/10" : "bg-transparent"}`}
+              >
+                <Text
+                  className={`text-xs font-semibold ${
+                    active ? "text-accent" : "text-text-secondary"
+                  }`}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {isLoading ? (
