@@ -6,12 +6,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { MovieCard } from "@/components/MovieCard";
+import { useWatchlist } from "@/context/WatchlistContext";
 import { getPerson, getPersonCredits, posterUrl } from "@/services/tmdb";
 import type { TMDBSearchResult } from "@/types";
 
 export default function ActorScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = Number(params.id);
+  const { getItem } = useWatchlist();
 
   const [name, setName] = useState("");
   const [profilePath, setProfilePath] = useState<string | null>(null);
@@ -70,14 +72,19 @@ export default function ActorScreen() {
           data={credits}
           keyExtractor={(item) => `${item.media_type}-${item.id}`}
           contentContainerStyle={{ padding: 16 }}
-          renderItem={({ item }) => (
-            <MovieCard
-              title={item.title ?? item.name ?? "Sans titre"}
-              posterPath={item.poster_path}
-              subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
-              onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
-            />
-          )}
+          renderItem={({ item }) => {
+            const listItem = getItem(item.media_type, item.id);
+            return (
+              <MovieCard
+                title={item.title ?? item.name ?? "Sans titre"}
+                posterPath={item.poster_path}
+                subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
+                status={listItem?.status}
+                rating={listItem?.rating}
+                onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+              />
+            );
+          }}
         />
       )}
     </SafeAreaView>
