@@ -1,15 +1,13 @@
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { MovieCard } from "@/components/MovieCard";
-import { PosterTile } from "@/components/PosterTile";
 import { STATUS_LABELS } from "@/constants/status";
 import { useWatchlist } from "@/context/WatchlistContext";
-import { getTrending } from "@/services/tmdb";
-import type { MediaType, TMDBSearchResult, WatchStatus } from "@/types";
+import type { MediaType, WatchStatus } from "@/types";
 
 type Filter = "all" | WatchStatus;
 type MediaTypeFilter = "all" | MediaType;
@@ -26,19 +24,12 @@ export default function WatchlistScreen() {
   const [filter, setFilter] = useState<Filter>("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const [genreFilter, setGenreFilter] = useState<string | "all">("all");
-  const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
 
   const availableGenres = useMemo(() => {
     const genres = new Set<string>();
     items.forEach((item) => item.genres?.forEach((genre) => genres.add(genre)));
     return Array.from(genres).sort((a, b) => a.localeCompare(b));
   }, [items]);
-
-  useEffect(() => {
-    getTrending()
-      .then(setTrending)
-      .catch(() => setTrending([]));
-  }, []);
 
   const filteredItems = useMemo(() => {
     const sorted = [...items].sort(
@@ -49,15 +40,6 @@ export default function WatchlistScreen() {
       .filter((item) => mediaTypeFilter === "all" || item.mediaType === mediaTypeFilter)
       .filter((item) => genreFilter === "all" || item.genres?.includes(genreFilter));
   }, [items, filter, mediaTypeFilter, genreFilter]);
-
-  const discoverItems = useMemo(() => {
-    const seenOrInProgress = new Set(
-      items
-        .filter((item) => item.status === "watched" || item.status === "watching")
-        .map((item) => `${item.mediaType}-${item.id}`)
-    );
-    return trending.filter((item) => !seenOrInProgress.has(`${item.media_type}-${item.id}`));
-  }, [trending, items]);
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
@@ -166,35 +148,11 @@ export default function WatchlistScreen() {
           <ActivityIndicator color="#E63946" />
         </View>
       ) : filteredItems.length === 0 ? (
-        <>
-          <EmptyState
-            icon="film-outline"
-            title="Liste vide"
-            message="Recherche un film ou une série pour l'ajouter à ta liste."
-          />
-          {discoverItems.length > 0 ? (
-            <View className="pb-6">
-              <Text className="px-4 pb-3 text-base font-semibold text-text-primary">
-                À découvrir
-              </Text>
-              <FlatList
-                data={discoverItems}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => `${item.media_type}-${item.id}`}
-                contentContainerStyle={{ paddingHorizontal: 16 }}
-                renderItem={({ item }) => (
-                  <PosterTile
-                    title={item.title ?? item.name ?? "Sans titre"}
-                    posterPath={item.poster_path}
-                    subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
-                    onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
-                  />
-                )}
-              />
-            </View>
-          ) : null}
-        </>
+        <EmptyState
+          icon="film-outline"
+          title="Liste vide"
+          message="Recherche un film ou une série pour l'ajouter à ta liste, ou regarde l'onglet À découvrir."
+        />
       ) : (
         <FlatList
           data={filteredItems}
@@ -214,29 +172,6 @@ export default function WatchlistScreen() {
               onRemove={() => removeItem(item.mediaType, item.id)}
             />
           )}
-          ListFooterComponent={
-            discoverItems.length > 0 ? (
-              <View className="pb-2 pt-4">
-                <Text className="pb-3 text-base font-semibold text-text-primary">
-                  À découvrir
-                </Text>
-                <FlatList
-                  data={discoverItems}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={(item) => `${item.media_type}-${item.id}`}
-                  renderItem={({ item }) => (
-                    <PosterTile
-                      title={item.title ?? item.name ?? "Sans titre"}
-                      posterPath={item.poster_path}
-                      subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
-                      onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
-                    />
-                  )}
-                />
-              </View>
-            ) : null
-          }
         />
       )}
     </SafeAreaView>
