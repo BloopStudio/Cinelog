@@ -66,78 +66,36 @@ export default function WatchlistScreen() {
         <Text className="text-sm text-text-secondary">Ta liste de films et séries</Text>
       </View>
 
-      <View className="flex-row gap-2 px-4 pt-3">
-        {FILTERS.map((value) => {
-          const active = filter === value;
-          return (
-            <Pressable
-              key={value}
-              onPress={() => setFilter(value)}
-              className={`rounded-full px-3 py-1.5 ${active ? "bg-primary" : "bg-surface"}`}
-            >
-              <Text
-                className={`text-xs font-semibold ${
-                  active ? "text-white" : "text-text-secondary"
-                }`}
-              >
-                {value === "all" ? "Tout" : STATUS_LABELS[value]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View className="flex-row gap-2 px-4 pb-2 pt-2">
-        {MEDIA_TYPE_FILTERS.map(({ value, label }) => {
-          const active = mediaTypeFilter === value;
-          return (
-            <Pressable
-              key={value}
-              onPress={() => setMediaTypeFilter(value)}
-              className={`rounded-full border px-3 py-1 ${
-                active ? "border-accent bg-accent/10" : "border-border bg-transparent"
-              }`}
-            >
-              <Text
-                className={`text-xs font-semibold ${
-                  active ? "text-accent" : "text-text-secondary"
-                }`}
-              >
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {availableGenres.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="pb-3"
-          contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-        >
-          <Pressable
-            onPress={() => setGenreFilter("all")}
-            className={`rounded-full border px-3 py-1 ${
-              genreFilter === "all" ? "border-accent bg-accent/10" : "border-border bg-transparent"
-            }`}
-          >
-            <Text
-              className={`text-xs font-semibold ${
-                genreFilter === "all" ? "text-accent" : "text-text-secondary"
-              }`}
-            >
-              Tous genres
-            </Text>
-          </Pressable>
-          {availableGenres.map((genre) => {
-            const active = genreFilter === genre;
+      <View className="gap-3 pb-3 pt-3">
+        <View className="flex-row flex-wrap gap-2 px-4">
+          {FILTERS.map((value) => {
+            const active = filter === value;
             return (
               <Pressable
-                key={genre}
-                onPress={() => setGenreFilter(active ? "all" : genre)}
-                className={`rounded-full border px-3 py-1 ${
+                key={value}
+                onPress={() => setFilter(value)}
+                className={`rounded-full px-3.5 py-2 ${active ? "bg-primary" : "bg-surface"}`}
+              >
+                <Text
+                  className={`text-xs font-semibold ${
+                    active ? "text-white" : "text-text-secondary"
+                  }`}
+                >
+                  {value === "all" ? "Tout" : STATUS_LABELS[value]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View className="flex-row items-center gap-2 px-4">
+          {MEDIA_TYPE_FILTERS.map(({ value, label }) => {
+            const active = mediaTypeFilter === value;
+            return (
+              <Pressable
+                key={value}
+                onPress={() => setMediaTypeFilter(value)}
+                className={`rounded-full border px-3.5 py-2 ${
                   active ? "border-accent bg-accent/10" : "border-border bg-transparent"
                 }`}
               >
@@ -146,13 +104,62 @@ export default function WatchlistScreen() {
                     active ? "text-accent" : "text-text-secondary"
                   }`}
                 >
-                  {genre}
+                  {label}
                 </Text>
               </Pressable>
             );
           })}
-        </ScrollView>
-      ) : null}
+
+          {availableGenres.length > 0 ? (
+            <View className="h-6 w-px bg-border" />
+          ) : null}
+
+          {availableGenres.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, alignItems: "center" }}
+            >
+              <Pressable
+                onPress={() => setGenreFilter("all")}
+                className={`rounded-full border px-3.5 py-2 ${
+                  genreFilter === "all"
+                    ? "border-accent bg-accent/10"
+                    : "border-border bg-transparent"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-semibold ${
+                    genreFilter === "all" ? "text-accent" : "text-text-secondary"
+                  }`}
+                >
+                  Tous genres
+                </Text>
+              </Pressable>
+              {availableGenres.map((genre) => {
+                const active = genreFilter === genre;
+                return (
+                  <Pressable
+                    key={genre}
+                    onPress={() => setGenreFilter(active ? "all" : genre)}
+                    className={`rounded-full border px-3.5 py-2 ${
+                      active ? "border-accent bg-accent/10" : "border-border bg-transparent"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-semibold ${
+                        active ? "text-accent" : "text-text-secondary"
+                      }`}
+                    >
+                      {genre}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : null}
+        </View>
+      </View>
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
