@@ -199,6 +199,7 @@ export default function WatchlistScreen() {
         <FlatList
           data={filteredItems}
           keyExtractor={(item) => `${item.mediaType}-${item.id}`}
+          removeClippedSubviews={false}
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => (
             <MovieCard

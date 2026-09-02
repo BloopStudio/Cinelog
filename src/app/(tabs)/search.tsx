@@ -111,6 +111,7 @@ export default function SearchScreen() {
         <FlatList
           data={results}
           keyExtractor={(item, index) => `${item.media_type}-${item.id}-${index}`}
+          removeClippedSubviews={false}
           contentContainerStyle={{ padding: 16 }}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}

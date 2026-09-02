@@ -71,6 +71,7 @@ export default function ActorScreen() {
         <FlatList
           data={credits}
           keyExtractor={(item) => `${item.media_type}-${item.id}`}
+          removeClippedSubviews={false}
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => {
             const listItem = getItem(item.media_type, item.id);
