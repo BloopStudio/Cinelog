@@ -138,10 +138,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         return code;
       },
       joinSharedList: async (code) => {
-        const remoteItems = await joinSharedListRemote(code);
-        await saveSharedListId(code.trim().toUpperCase());
-        setItems(remoteItems);
-        setSharedListId(code.trim().toUpperCase());
+        const mergedItems = await joinSharedListRemote(code, items);
+        const normalizedCode = code.trim().toUpperCase();
+        await saveSharedListId(normalizedCode);
+        setItems(mergedItems);
+        setSharedListId(normalizedCode);
       },
       leaveSharedList: async () => {
         if (sharedListId) await leaveSharedListRemote(sharedListId);

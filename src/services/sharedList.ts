@@ -73,7 +73,10 @@ export async function createSharedList(items: WatchlistItem[]): Promise<string> 
   return code;
 }
 
-export async function joinSharedList(code: string): Promise<WatchlistItem[]> {
+export async function joinSharedList(
+  code: string,
+  localItems: WatchlistItem[]
+): Promise<WatchlistItem[]> {
   const normalizedCode = code.trim().toUpperCase();
   const user = await ensureSignedIn();
   const db = getFirebaseDb();
@@ -89,7 +92,27 @@ export async function joinSharedList(code: string): Promise<WatchlistItem[]> {
     });
 
     const itemsSnap = await getDocs(collection(db, "lists", normalizedCode, "items"));
-    return itemsSnap.docs.map((itemDoc) => itemDoc.data() as WatchlistItem);
+    const remoteItems = itemsSnap.docs.map((itemDoc) => itemDoc.data() as WatchlistItem);
+    const remoteKeys = new Set(remoteItems.map((item) => itemDocId(item.mediaType, item.id)));
+
+    // Joining a shared list must not silently wipe whatever this device
+    // was already tracking locally — anything not already in the shared
+    // list gets merged into it instead of discarded.
+    const localOnlyItems = localItems.filter(
+      (item) => !remoteKeys.has(itemDocId(item.mediaType, item.id))
+    );
+    if (localOnlyItems.length > 0) {
+      const batch = writeBatch(db);
+      localOnlyItems.forEach((item) => {
+        batch.set(
+          doc(db, "lists", normalizedCode, "items", itemDocId(item.mediaType, item.id)),
+          item
+        );
+      });
+      await batch.commit();
+    }
+
+    return [...remoteItems, ...localOnlyItems];
   });
 }
 
