@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { ensureSignedIn } from "@/services/firebase";
 import {
   createSharedList as createSharedListRemote,
   joinSharedList as joinSharedListRemote,
@@ -59,22 +60,37 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   // Once a shared list is joined/created, its id is cached locally (see
   // saveSharedListId) so this reconnects automatically on every launch —
-  // no need to re-enter the code.
+  // no need to re-enter the code. On a fresh app process, Firebase Auth's
+  // anonymous session must be explicitly restored (ensureSignedIn) before
+  // subscribing: Firestore treats an app with no Auth instance registered
+  // as unauthenticated, and the security rules silently reject every read.
   useEffect(() => {
     if (!sharedListId) {
       setSyncState("solo");
       return;
     }
     setSyncState("connecting");
-    const unsubscribe = subscribeToSharedList(
-      sharedListId,
-      (remoteItems) => {
-        setItems(remoteItems);
-        setSyncState("synced");
-      },
-      () => setSyncState("error")
-    );
-    return unsubscribe;
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+
+    ensureSignedIn()
+      .then(() => {
+        if (cancelled) return;
+        unsubscribe = subscribeToSharedList(
+          sharedListId,
+          (remoteItems) => {
+            setItems(remoteItems);
+            setSyncState("synced");
+          },
+          () => setSyncState("error")
+        );
+      })
+      .catch(() => setSyncState("error"));
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [sharedListId]);
 
   const value = useMemo<WatchlistContextValue>(
