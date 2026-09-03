@@ -8,6 +8,7 @@ import {
   removeRemoteItem,
   setRemoteCurrentSeason,
   setRemoteRating,
+  setRemoteRuntimeMinutes,
   setRemoteStatus,
   setRemoteWatchedAt,
   subscribeToSharedList,
@@ -30,6 +31,7 @@ interface WatchlistContextValue {
   setRating: (mediaType: MediaType, id: number, rating: number) => Promise<void>;
   setCurrentSeason: (mediaType: MediaType, id: number, season: number) => Promise<void>;
   setWatchedAt: (mediaType: MediaType, id: number, watchedAt: string) => Promise<void>;
+  setRuntimeMinutes: (mediaType: MediaType, id: number, runtimeMinutes: number) => Promise<void>;
   createSharedList: () => Promise<string>;
   joinSharedList: (code: string) => Promise<void>;
   leaveSharedList: () => Promise<void>;
@@ -165,6 +167,16 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           prev.map((entry) => (sameEntry(entry, mediaType, id) ? { ...entry, watchedAt } : entry))
         );
         if (sharedListId) await setRemoteWatchedAt(sharedListId, mediaType, id, watchedAt);
+      },
+      setRuntimeMinutes: async (mediaType, id, runtimeMinutes) => {
+        setItems((prev) =>
+          prev.map((entry) =>
+            sameEntry(entry, mediaType, id) ? { ...entry, runtimeMinutes } : entry
+          )
+        );
+        if (sharedListId) {
+          await setRemoteRuntimeMinutes(sharedListId, mediaType, id, runtimeMinutes);
+        }
       },
       createSharedList: async () => {
         const code = await createSharedListRemote(items);

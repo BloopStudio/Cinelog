@@ -105,6 +105,19 @@ export async function getDetails(mediaType: MediaType, id: number): Promise<TMDB
   return { ...data, media_type: mediaType };
 }
 
+// Movies carry their own runtime; TV shows don't (TMDB gives per-episode
+// runtime instead), so it's approximated as episodes × runtime, falling
+// back to a 45min/episode estimate when TMDB doesn't provide one.
+export function estimateRuntimeMinutes(
+  details: TMDBDetails,
+  mediaType: MediaType
+): number | undefined {
+  if (mediaType === "movie") return details.runtime;
+  if (!details.number_of_episodes) return undefined;
+  const perEpisode = details.episode_run_time?.[0] ?? 45;
+  return details.number_of_episodes * perEpisode;
+}
+
 function shuffle<T>(items: T[]): T[] {
   const shuffled = [...items];
   for (let i = shuffled.length - 1; i > 0; i--) {

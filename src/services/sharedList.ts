@@ -191,3 +191,14 @@ export async function setRemoteWatchedAt(
     watchedAt,
   });
 }
+
+export async function setRemoteRuntimeMinutes(
+  listId: string,
+  mediaType: MediaType,
+  id: number,
+  runtimeMinutes: number
+): Promise<void> {
+  await updateDoc(doc(getFirebaseDb(), "lists", listId, "items", itemDocId(mediaType, id)), {
+    runtimeMinutes,
+  });
+}

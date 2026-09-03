@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { useWatchlist } from "@/context/WatchlistContext";
+import { estimateRuntimeMinutes, getDetails } from "@/services/tmdb";
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
@@ -17,10 +18,35 @@ function StatTile({ label, value }: { label: string; value: string }) {
 }
 
 export default function StatsScreen() {
-  const { items } = useWatchlist();
+  const { items, setRuntimeMinutes } = useWatchlist();
 
   const watched = useMemo(() => items.filter((item) => item.status === "watched"), [items]);
   const rated = useMemo(() => items.filter((item) => item.rating > 0), [items]);
+
+  // Titles added before runtime tracking existed have no runtimeMinutes —
+  // "temps estimé" would silently ignore them. Fetch and cache it for
+  // whichever watched items are still missing it, once, in the background.
+  // requestedRef dedupes across re-renders so each title is only fetched
+  // once per screen visit, even though "watched" is a new array every time
+  // an item gets backfilled.
+  const requestedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    watched.forEach((item) => {
+      if (item.runtimeMinutes !== undefined) return;
+      const key = `${item.mediaType}-${item.id}`;
+      if (requestedRef.current.has(key)) return;
+      requestedRef.current.add(key);
+
+      getDetails(item.mediaType, item.id)
+        .then((details) => {
+          const minutes = estimateRuntimeMinutes(details, item.mediaType);
+          if (minutes) setRuntimeMinutes(item.mediaType, item.id, minutes);
+        })
+        .catch(() => {
+          // silencieux : le titre restera simplement exclu de l'estimation
+        });
+    });
+  }, [watched, setRuntimeMinutes]);
 
   const totalHours = Math.round(
     watched.reduce((sum, item) => sum + (item.runtimeMinutes ?? 0), 0) / 60

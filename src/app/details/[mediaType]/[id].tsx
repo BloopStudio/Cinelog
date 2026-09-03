@@ -16,18 +16,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { RatingStars } from "@/components/RatingStars";
 import { STATUS_LABELS, STATUS_ORDER } from "@/constants/status";
 import { useWatchlist } from "@/context/WatchlistContext";
-import { getDetails, posterUrl, providerLogoUrl, WATCH_PROVIDER_REGION } from "@/services/tmdb";
+import {
+  estimateRuntimeMinutes,
+  getDetails,
+  posterUrl,
+  providerLogoUrl,
+  WATCH_PROVIDER_REGION,
+} from "@/services/tmdb";
 import type { MediaType, TMDBDetails, WatchStatus } from "@/types";
-
-// Movies carry their own runtime; TV shows don't (TMDB gives per-episode
-// runtime instead), so it's approximated as episodes × runtime, falling
-// back to a 45min/episode estimate when TMDB doesn't provide one.
-function estimateRuntimeMinutes(details: TMDBDetails, mediaType: MediaType): number | undefined {
-  if (mediaType === "movie") return details.runtime;
-  if (!details.number_of_episodes) return undefined;
-  const perEpisode = details.episode_run_time?.[0] ?? 45;
-  return details.number_of_episodes * perEpisode;
-}
 
 function formatWatchedDate(iso: string | undefined): string {
   return (iso ? new Date(iso) : new Date()).toLocaleDateString("fr-FR", {
