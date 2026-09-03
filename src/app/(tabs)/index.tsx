@@ -54,11 +54,16 @@ export default function WatchlistScreen() {
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
-      <View className="px-4 pb-2 pt-4">
-        <Text className="text-2xl font-bold text-text-primary">CinéLog</Text>
-        <Text className="text-sm text-text-secondary">
-          {filteredItems.length} titre{filteredItems.length > 1 ? "s" : ""} dans ta liste
-        </Text>
+      <View className="flex-row items-start justify-between px-4 pb-2 pt-4">
+        <View>
+          <Text className="text-2xl font-bold text-text-primary">CinéLog</Text>
+          <Text className="text-sm text-text-secondary">
+            {filteredItems.length} titre{filteredItems.length > 1 ? "s" : ""} dans ta liste
+          </Text>
+        </View>
+        <Pressable onPress={() => router.push("/share")} hitSlop={8} className="p-1">
+          <Ionicons name="people-outline" size={24} color="#9AA5B1" />
+        </Pressable>
       </View>
 
       <View className="gap-3 pb-3 pt-3">

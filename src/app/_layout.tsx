@@ -28,6 +28,15 @@ export default function RootLayout() {
                 headerTintColor: "#F5F7FA",
               }}
             />
+            <Stack.Screen
+              name="share"
+              options={{
+                headerShown: true,
+                headerTitle: "",
+                headerStyle: { backgroundColor: "#0B0F14" },
+                headerTintColor: "#F5F7FA",
+              }}
+            />
           </Stack>
         </WatchlistProvider>
       </SafeAreaProvider>

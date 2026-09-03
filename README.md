@@ -107,6 +107,12 @@ Dans *Settings → Secrets and variables → Actions* du dépôt :
 | `ANDROID_KEY_ALIAS` | Si keystore fourni | Alias de la clé |
 | `ANDROID_KEY_PASSWORD` | Si keystore fourni | Mot de passe de la clé |
 | `PLAY_STORE_SERVICE_ACCOUNT_JSON` | Non | Publication automatique sur le Play Store (voir section ci-dessous) |
+| `FIREBASE_API_KEY` | Non | Synchro "Partager ma liste" entre téléphones (voir section ci-dessous) |
+| `FIREBASE_AUTH_DOMAIN` | Non | idem |
+| `FIREBASE_PROJECT_ID` | Non | idem |
+| `FIREBASE_STORAGE_BUCKET` | Non | idem |
+| `FIREBASE_MESSAGING_SENDER_ID` | Non | idem |
+| `FIREBASE_APP_ID` | Non | idem |
 
 \* Sans keystore, l'APK release est signé avec la clé de debug par défaut :
 il s'installe et fonctionne pour tester, mais **n'est pas valable pour une
@@ -146,3 +152,27 @@ défaut) — si tu utilises une autre piste fermée, ajuste la valeur `track`
 dans `.github/workflows/android-release.yml`.
 
 Aucun compte supplémentaire n'est nécessaire pour les utilisateurs finaux.
+
+## Synchro entre téléphones (Firebase)
+
+CinéLog reste **100% local par défaut** (AsyncStorage, aucun compte). La
+fonctionnalité optionnelle "Partager ma liste" (icône en haut à droite de
+l'écran *Ma liste*) permet de synchroniser la liste entre deux téléphones via
+Firestore, avec un simple code à 8 caractères (pas de compte utilisateur
+classique — authentification anonyme Firebase en coulisses).
+
+Prérequis (une seule fois) :
+
+1. Créer un projet sur https://console.firebase.google.com (plan gratuit
+   Spark, suffisant)
+2. **Firestore Database** → créer la base en mode Production, puis coller le
+   contenu de [`firestore.rules`](./firestore.rules) dans l'onglet *Rules*
+3. **Authentication** → *Sign-in method* → activer **Anonymous**
+4. **Project settings** → *Vos applications* → ajouter une app **Web** (`</>`)
+   → copier les 6 valeurs de `firebaseConfig` dans les secrets `FIREBASE_*`
+   ci-dessus (et dans `.env` en local, voir `.env.example`)
+
+Ces valeurs ne sont pas secrètes à proprement parler (la sécurité vient des
+règles Firestore, pas de la confidentialité de la config) ; elles sont
+passées en secrets GitHub par cohérence avec le reste du projet. Sans elles,
+l'app fonctionne normalement, juste sans la synchro multi-téléphones.
