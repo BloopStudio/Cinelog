@@ -12,7 +12,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 
-import { db, ensureSignedIn } from "@/services/firebase";
+import { ensureSignedIn, getFirebaseDb } from "@/services/firebase";
 import type { MediaType, WatchlistItem, WatchStatus } from "@/types";
 
 // Excludes visually ambiguous characters (0/O, 1/I).
@@ -34,6 +34,7 @@ function itemDocId(mediaType: MediaType, id: number) {
 export async function createSharedList(items: WatchlistItem[]): Promise<string> {
   const user = await ensureSignedIn();
   const code = generateListCode();
+  const db = getFirebaseDb();
 
   const batch = writeBatch(db);
   batch.set(doc(db, "lists", code), { code, createdAt: serverTimestamp() });
@@ -49,6 +50,7 @@ export async function createSharedList(items: WatchlistItem[]): Promise<string> 
 export async function joinSharedList(code: string): Promise<WatchlistItem[]> {
   const normalizedCode = code.trim().toUpperCase();
   const user = await ensureSignedIn();
+  const db = getFirebaseDb();
   const listRef = doc(db, "lists", normalizedCode);
   const listSnap = await getDoc(listRef);
   if (!listSnap.exists()) {
@@ -65,7 +67,7 @@ export async function joinSharedList(code: string): Promise<WatchlistItem[]> {
 
 export async function leaveSharedList(listId: string): Promise<void> {
   const user = await ensureSignedIn();
-  await deleteDoc(doc(db, "lists", listId, "members", user.uid));
+  await deleteDoc(doc(getFirebaseDb(), "lists", listId, "members", user.uid));
 }
 
 export function subscribeToSharedList(
@@ -74,14 +76,17 @@ export function subscribeToSharedList(
   onError: (error: Error) => void
 ): Unsubscribe {
   return onSnapshot(
-    collection(db, "lists", listId, "items"),
+    collection(getFirebaseDb(), "lists", listId, "items"),
     (snapshot) => onItems(snapshot.docs.map((itemDoc) => itemDoc.data() as WatchlistItem)),
     onError
   );
 }
 
 export async function upsertRemoteItem(listId: string, item: WatchlistItem): Promise<void> {
-  await setDoc(doc(db, "lists", listId, "items", itemDocId(item.mediaType, item.id)), item);
+  await setDoc(
+    doc(getFirebaseDb(), "lists", listId, "items", itemDocId(item.mediaType, item.id)),
+    item
+  );
 }
 
 export async function removeRemoteItem(
@@ -89,7 +94,7 @@ export async function removeRemoteItem(
   mediaType: MediaType,
   id: number
 ): Promise<void> {
-  await deleteDoc(doc(db, "lists", listId, "items", itemDocId(mediaType, id)));
+  await deleteDoc(doc(getFirebaseDb(), "lists", listId, "items", itemDocId(mediaType, id)));
 }
 
 export async function setRemoteStatus(
@@ -98,7 +103,9 @@ export async function setRemoteStatus(
   id: number,
   status: WatchStatus
 ): Promise<void> {
-  await updateDoc(doc(db, "lists", listId, "items", itemDocId(mediaType, id)), { status });
+  await updateDoc(doc(getFirebaseDb(), "lists", listId, "items", itemDocId(mediaType, id)), {
+    status,
+  });
 }
 
 export async function setRemoteRating(
@@ -107,5 +114,7 @@ export async function setRemoteRating(
   id: number,
   rating: number
 ): Promise<void> {
-  await updateDoc(doc(db, "lists", listId, "items", itemDocId(mediaType, id)), { rating });
+  await updateDoc(doc(getFirebaseDb(), "lists", listId, "items", itemDocId(mediaType, id)), {
+    rating,
+  });
 }

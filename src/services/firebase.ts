@@ -1,16 +1,17 @@
-import { getApp, getApps, initializeApp } from "firebase/app";
+import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import {
   getAuth,
   initializeAuth,
   onAuthStateChanged,
   signInAnonymously,
+  type Auth,
   type User,
   // @ts-expect-error getReactNativePersistence isn't in firebase's published
   // web types, even though Metro correctly resolves the React Native build
   // (with this export) at runtime. Known gap in the firebase package's types.
   getReactNativePersistence,
 } from "firebase/auth";
-import { initializeFirestore } from "firebase/firestore";
+import { initializeFirestore, type Firestore } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const firebaseConfig = {
@@ -22,41 +23,67 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Everything here is lazily created on first use, not at module load. This
+// file is imported transitively by WatchlistContext (mounted for every app
+// launch), so an eager initializeApp/initializeAuth/initializeFirestore at
+// the top level would run Firebase + native-module (AsyncStorage) work on
+// every single startup — including for solo users who never touch "Partager
+// ma liste" — and any hiccup there (a flaky emulator, a native module not
+// fully ready yet) would crash or hang the whole app before it even renders.
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
 
-// initializeAuth throws if called twice on the same app (e.g. Metro Fast
-// Refresh re-running this module) — fall back to the already-initialized
-// instance instead of crashing.
-let auth: ReturnType<typeof getAuth>;
-try {
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
-} catch {
-  auth = getAuth(app);
+function getFirebaseApp(): FirebaseApp {
+  if (!app) {
+    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  }
+  return app;
 }
 
-export { auth };
-// React Native's networking layer struggles with Firestore's default gRPC
-// streaming (connections can silently hang on some networks/devices) —
-// auto-detecting long-polling instead is the standard RN reliability fix.
-export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+function getFirebaseAuth(): Auth {
+  if (!auth) {
+    const firebaseApp = getFirebaseApp();
+    // initializeAuth throws if called twice on the same app (e.g. Metro
+    // Fast Refresh re-running this module) — fall back to the
+    // already-initialized instance instead of crashing.
+    try {
+      auth = initializeAuth(firebaseApp, {
+        persistence: getReactNativePersistence(AsyncStorage),
+      });
+    } catch {
+      auth = getAuth(firebaseApp);
+    }
+  }
+  return auth;
+}
+
+export function getFirebaseDb(): Firestore {
+  if (!db) {
+    // React Native's networking layer struggles with Firestore's default
+    // gRPC streaming (connections can silently hang on some networks/
+    // devices) — auto-detecting long-polling is the standard RN fix.
+    db = initializeFirestore(getFirebaseApp(), { experimentalAutoDetectLongPolling: true });
+  }
+  return db;
+}
 
 let signInPromise: Promise<User> | null = null;
 
 export function ensureSignedIn(): Promise<User> {
-  if (auth.currentUser) return Promise.resolve(auth.currentUser);
+  const firebaseAuth = getFirebaseAuth();
+  if (firebaseAuth.currentUser) return Promise.resolve(firebaseAuth.currentUser);
   if (!signInPromise) {
     signInPromise = new Promise((resolve, reject) => {
       const unsubscribe = onAuthStateChanged(
-        auth,
+        firebaseAuth,
         (user) => {
           unsubscribe();
           if (user) {
             resolve(user);
             return;
           }
-          signInAnonymously(auth)
+          signInAnonymously(firebaseAuth)
             .then((credential) => resolve(credential.user))
             .catch(reject);
         },
