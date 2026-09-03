@@ -82,8 +82,20 @@ jobs:
       - name: Prebuild native Android project
         run: npx expo prebuild --platform android --clean
 
-      - name: Enable Gradle build cache
-        run: printf '\norg.gradle.caching=true\n' >> android/gradle.properties
+      - name: Tune Gradle for CI
+        # org.gradle.caching: reuse task outputs across runs (paired with the
+        # ~/.gradle cache below). parallel/workers: ubuntu-latest has 4 vCPUs,
+        # let independent module tasks (native modules are separate Gradle
+        # subprojects here) build concurrently instead of serially. jvmargs:
+        # more heap for R8/dexing on 16GB runners, the default is tuned for
+        # much smaller machines. Properties files use last-value-wins, so
+        # this safely overrides expo prebuild's defaults.
+        run: |
+          printf '\norg.gradle.caching=true\n' >> android/gradle.properties
+          printf 'org.gradle.parallel=true\n' >> android/gradle.properties
+          printf 'org.gradle.workers.max=4\n' >> android/gradle.properties
+          printf 'org.gradle.configureondemand=true\n' >> android/gradle.properties
+          printf 'org.gradle.jvmargs=-Xmx4608m -XX:MaxMetaspaceSize=1024m\n' >> android/gradle.properties
 
       - name: Cache Gradle
         uses: actions/cache@v4
