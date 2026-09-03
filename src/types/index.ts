@@ -30,13 +30,29 @@ export interface TMDBPersonResult {
 
 export type SearchResult = TMDBSearchResult | TMDBPersonResult;
 
+export interface WatchProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string | null;
+  display_priority: number;
+}
+
+export interface WatchProviderRegion {
+  link: string;
+  flatrate?: WatchProvider[];
+  rent?: WatchProvider[];
+  buy?: WatchProvider[];
+}
+
 export interface TMDBDetails extends TMDBSearchResult {
   genres: { id: number; name: string }[];
   runtime?: number;
   number_of_seasons?: number;
   number_of_episodes?: number;
+  episode_run_time?: number[];
   tagline: string;
   credits?: { cast: CastMember[] };
+  "watch/providers"?: { results: Record<string, WatchProviderRegion> };
 }
 
 export interface WatchlistItem {
@@ -50,4 +66,7 @@ export interface WatchlistItem {
   rating: number;
   addedAt: string;
   genres?: string[];
+  runtimeMinutes?: number;
+  currentSeason?: number;
+  watchedAt?: string;
 }

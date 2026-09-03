@@ -10,6 +10,15 @@ export function posterUrl(path: string | null, size: "w185" | "w342" | "w500" = 
   return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
 }
 
+export function providerLogoUrl(path: string | null) {
+  if (!path) return null;
+  return `${TMDB_IMAGE_BASE_URL}/w92${path}`;
+}
+
+// Région utilisée pour "où regarder" (TMDB retourne les disponibilités par
+// pays) — l'app est en français, on affiche la disponibilité en France.
+export const WATCH_PROVIDER_REGION = "FR";
+
 async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): Promise<T> {
   if (!ACCESS_TOKEN) {
     throw new Error(
@@ -91,7 +100,7 @@ export async function getPersonCredits(id: number): Promise<TMDBSearchResult[]> 
 
 export async function getDetails(mediaType: MediaType, id: number): Promise<TMDBDetails> {
   const data = await tmdbFetch<TMDBDetails>(`/${mediaType}/${id}`, {
-    append_to_response: "credits",
+    append_to_response: "credits,watch/providers",
   });
   return { ...data, media_type: mediaType };
 }

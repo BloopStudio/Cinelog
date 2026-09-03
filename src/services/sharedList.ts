@@ -169,3 +169,25 @@ export async function setRemoteRating(
     rating,
   });
 }
+
+export async function setRemoteCurrentSeason(
+  listId: string,
+  mediaType: MediaType,
+  id: number,
+  currentSeason: number
+): Promise<void> {
+  await updateDoc(doc(getFirebaseDb(), "lists", listId, "items", itemDocId(mediaType, id)), {
+    currentSeason,
+  });
+}
+
+export async function setRemoteWatchedAt(
+  listId: string,
+  mediaType: MediaType,
+  id: number,
+  watchedAt: string
+): Promise<void> {
+  await updateDoc(doc(getFirebaseDb(), "lists", listId, "items", itemDocId(mediaType, id)), {
+    watchedAt,
+  });
+}

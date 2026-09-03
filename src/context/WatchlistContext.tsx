@@ -6,8 +6,10 @@ import {
   joinSharedList as joinSharedListRemote,
   leaveSharedList as leaveSharedListRemote,
   removeRemoteItem,
+  setRemoteCurrentSeason,
   setRemoteRating,
   setRemoteStatus,
+  setRemoteWatchedAt,
   subscribeToSharedList,
   upsertRemoteItem,
 } from "@/services/sharedList";
@@ -26,6 +28,8 @@ interface WatchlistContextValue {
   removeItem: (mediaType: MediaType, id: number) => Promise<void>;
   setStatus: (mediaType: MediaType, id: number, status: WatchStatus) => Promise<void>;
   setRating: (mediaType: MediaType, id: number, rating: number) => Promise<void>;
+  setCurrentSeason: (mediaType: MediaType, id: number, season: number) => Promise<void>;
+  setWatchedAt: (mediaType: MediaType, id: number, watchedAt: string) => Promise<void>;
   createSharedList: () => Promise<string>;
   joinSharedList: (code: string) => Promise<void>;
   leaveSharedList: () => Promise<void>;
@@ -120,16 +124,47 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         if (sharedListId) await removeRemoteItem(sharedListId, mediaType, id);
       },
       setStatus: async (mediaType, id, status) => {
+        // First time a title is marked "watched", stamp today as the
+        // watched date so it shows up in the journal — the user can still
+        // change it afterwards (setWatchedAt), this is just a sane default.
+        const existing = items.find((entry) => sameEntry(entry, mediaType, id));
+        const shouldStampWatchedAt = status === "watched" && !existing?.watchedAt;
+        const watchedAt = new Date().toISOString();
+
         setItems((prev) =>
-          prev.map((entry) => (sameEntry(entry, mediaType, id) ? { ...entry, status } : entry))
+          prev.map((entry) =>
+            sameEntry(entry, mediaType, id)
+              ? { ...entry, status, ...(shouldStampWatchedAt ? { watchedAt } : {}) }
+              : entry
+          )
         );
-        if (sharedListId) await setRemoteStatus(sharedListId, mediaType, id, status);
+
+        if (sharedListId) {
+          await setRemoteStatus(sharedListId, mediaType, id, status);
+          if (shouldStampWatchedAt) {
+            await setRemoteWatchedAt(sharedListId, mediaType, id, watchedAt);
+          }
+        }
       },
       setRating: async (mediaType, id, rating) => {
         setItems((prev) =>
           prev.map((entry) => (sameEntry(entry, mediaType, id) ? { ...entry, rating } : entry))
         );
         if (sharedListId) await setRemoteRating(sharedListId, mediaType, id, rating);
+      },
+      setCurrentSeason: async (mediaType, id, season) => {
+        setItems((prev) =>
+          prev.map((entry) =>
+            sameEntry(entry, mediaType, id) ? { ...entry, currentSeason: season } : entry
+          )
+        );
+        if (sharedListId) await setRemoteCurrentSeason(sharedListId, mediaType, id, season);
+      },
+      setWatchedAt: async (mediaType, id, watchedAt) => {
+        setItems((prev) =>
+          prev.map((entry) => (sameEntry(entry, mediaType, id) ? { ...entry, watchedAt } : entry))
+        );
+        if (sharedListId) await setRemoteWatchedAt(sharedListId, mediaType, id, watchedAt);
       },
       createSharedList: async () => {
         const code = await createSharedListRemote(items);
