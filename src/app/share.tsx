@@ -31,8 +31,8 @@ export default function ShareScreen() {
     setIsCreating(true);
     try {
       await createSharedList();
-    } catch {
-      setError("Impossible de créer la liste partagée. Vérifie ta connexion.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible de créer la liste partagée.");
     } finally {
       setIsCreating(false);
     }

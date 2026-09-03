@@ -74,7 +74,7 @@ export function ensureSignedIn(): Promise<User> {
   const firebaseAuth = getFirebaseAuth();
   if (firebaseAuth.currentUser) return Promise.resolve(firebaseAuth.currentUser);
   if (!signInPromise) {
-    signInPromise = new Promise((resolve, reject) => {
+    signInPromise = new Promise<User>((resolve, reject) => {
       const unsubscribe = onAuthStateChanged(
         firebaseAuth,
         (user) => {
@@ -89,6 +89,12 @@ export function ensureSignedIn(): Promise<User> {
         },
         reject
       );
+      // A failed attempt (e.g. a transient network hiccup on cold start)
+      // must not be cached forever — clear it so the next call retries
+      // instead of immediately re-rejecting with the same stale error.
+    }).catch((error) => {
+      signInPromise = null;
+      throw error;
     });
   }
   return signInPromise;

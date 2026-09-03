@@ -31,18 +31,44 @@ function itemDocId(mediaType: MediaType, id: number) {
   return `${mediaType}-${id}`;
 }
 
+// Firestore's first network round-trip after a cold start (fresh gRPC/
+// long-polling channel) is prone to spurious transient failures — the SDK's
+// offline write queue can end up delivering the write anyway a moment
+// later, but the promise from *that* call already rejected. Retrying the
+// exact same, idempotent (overwrite-based) operation is safe and clears up
+// most of these without the user having to notice.
+class NotFoundError extends Error {}
+
+async function withRetry<T>(operation: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (error instanceof NotFoundError) throw error;
+      lastError = error;
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 export async function createSharedList(items: WatchlistItem[]): Promise<string> {
   const user = await ensureSignedIn();
   const code = generateListCode();
   const db = getFirebaseDb();
 
-  const batch = writeBatch(db);
-  batch.set(doc(db, "lists", code), { code, createdAt: serverTimestamp() });
-  batch.set(doc(db, "lists", code, "members", user.uid), { joinedAt: serverTimestamp() });
-  items.forEach((item) => {
-    batch.set(doc(db, "lists", code, "items", itemDocId(item.mediaType, item.id)), item);
+  await withRetry(async () => {
+    const batch = writeBatch(db);
+    batch.set(doc(db, "lists", code), { code, createdAt: serverTimestamp() });
+    batch.set(doc(db, "lists", code, "members", user.uid), { joinedAt: serverTimestamp() });
+    items.forEach((item) => {
+      batch.set(doc(db, "lists", code, "items", itemDocId(item.mediaType, item.id)), item);
+    });
+    await batch.commit();
   });
-  await batch.commit();
 
   return code;
 }
@@ -51,18 +77,20 @@ export async function joinSharedList(code: string): Promise<WatchlistItem[]> {
   const normalizedCode = code.trim().toUpperCase();
   const user = await ensureSignedIn();
   const db = getFirebaseDb();
-  const listRef = doc(db, "lists", normalizedCode);
-  const listSnap = await getDoc(listRef);
-  if (!listSnap.exists()) {
-    throw new Error("Aucune liste ne correspond à ce code.");
-  }
 
-  await setDoc(doc(db, "lists", normalizedCode, "members", user.uid), {
-    joinedAt: serverTimestamp(),
+  return withRetry(async () => {
+    const listSnap = await getDoc(doc(db, "lists", normalizedCode));
+    if (!listSnap.exists()) {
+      throw new NotFoundError("Aucune liste ne correspond à ce code.");
+    }
+
+    await setDoc(doc(db, "lists", normalizedCode, "members", user.uid), {
+      joinedAt: serverTimestamp(),
+    });
+
+    const itemsSnap = await getDocs(collection(db, "lists", normalizedCode, "items"));
+    return itemsSnap.docs.map((itemDoc) => itemDoc.data() as WatchlistItem);
   });
-
-  const itemsSnap = await getDocs(collection(db, "lists", normalizedCode, "items"));
-  return itemsSnap.docs.map((itemDoc) => itemDoc.data() as WatchlistItem);
 }
 
 export async function leaveSharedList(listId: string): Promise<void> {
