@@ -430,7 +430,7 @@ export default function DetailsScreen() {
               <DateField
                 label="Année"
                 value={draftDate.getFullYear()}
-                min={2000}
+                min={1900}
                 max={new Date().getFullYear()}
                 onChange={(year) =>
                   setDraftDate((prev) => new Date(year, prev.getMonth(), prev.getDate(), 12))
