@@ -14,7 +14,15 @@ import {
   subscribeToSharedList,
   upsertRemoteItem,
 } from "@/services/sharedList";
-import { loadSharedListId, loadWatchlist, saveSharedListId, saveWatchlist } from "@/services/storage";
+import {
+  loadSharedListId,
+  loadWatchedDateFixDone,
+  loadWatchlist,
+  saveSharedListId,
+  saveWatchedDateFixDone,
+  saveWatchlist,
+} from "@/services/storage";
+import { getDetails, getReleaseDateFloor } from "@/services/tmdb";
 import type { MediaType, WatchlistItem, WatchStatus } from "@/types";
 
 export type SyncState = "solo" | "connecting" | "synced" | "error";
@@ -199,6 +207,43 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     }),
     [items, isLoading, sharedListId, syncState]
   );
+
+  // One-time correction for watchedAt dates saved before the "can't be
+  // earlier than the release date" rule existed (see the details screen's
+  // date picker). Runs once ever per device, tracked by a persisted flag —
+  // this is a migration, not an ongoing check, so it never re-fetches
+  // titles that are already known-correct.
+  useEffect(() => {
+    if (isLoading) return;
+    let cancelled = false;
+
+    (async () => {
+      if (await loadWatchedDateFixDone()) return;
+
+      const candidates = items.filter((item) => item.status === "watched" && item.watchedAt);
+      for (const item of candidates) {
+        if (cancelled) return;
+        try {
+          const details = await getDetails(item.mediaType, item.id);
+          const floor = getReleaseDateFloor(details);
+          const watched = item.watchedAt ? new Date(item.watchedAt) : null;
+          if (floor && watched && watched < floor) {
+            const noon = new Date(floor.getFullYear(), floor.getMonth(), floor.getDate(), 12);
+            await value.setWatchedAt(item.mediaType, item.id, noon.toISOString());
+          }
+        } catch {
+          // best-effort : un échec sur un titre ne bloque pas les autres
+        }
+      }
+
+      if (!cancelled) await saveWatchedDateFixDone();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
 
   return <WatchlistContext.Provider value={value}>{children}</WatchlistContext.Provider>;
 }

@@ -105,6 +105,16 @@ export async function getDetails(mediaType: MediaType, id: number): Promise<TMDB
   return { ...data, media_type: mediaType };
 }
 
+// A watched date earlier than the release date doesn't make sense — this is
+// the floor both the date picker and the one-time backfill clamp to.
+export function getReleaseDateFloor(details: TMDBDetails): Date | null {
+  const raw = details.release_date || details.first_air_date;
+  if (!raw) return null;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 // Movies carry their own runtime; TV shows don't (TMDB gives per-episode
 // runtime instead), so it's approximated as episodes × runtime, falling
 // back to a 45min/episode estimate when TMDB doesn't provide one.

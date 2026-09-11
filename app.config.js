@@ -44,6 +44,7 @@ module.exports = {
           imageWidth: 120,
         },
       ],
+      "@react-native-community/datetimepicker",
       "./plugins/withAndroidReleaseSigning.js",
     ],
     experiments: {

@@ -4,6 +4,7 @@ import type { WatchlistItem } from "@/types";
 
 const WATCHLIST_KEY = "@cinelog/watchlist";
 const SHARED_LIST_ID_KEY = "@cinelog/shared-list-id";
+const WATCHED_DATE_FIX_KEY = "@cinelog/watched-date-fix-v1";
 
 export async function loadWatchlist(): Promise<WatchlistItem[]> {
   const raw = await AsyncStorage.getItem(WATCHLIST_KEY);
@@ -29,4 +30,15 @@ export async function saveSharedListId(listId: string | null): Promise<void> {
   } else {
     await AsyncStorage.removeItem(SHARED_LIST_ID_KEY);
   }
+}
+
+// One-shot migration flag: corrects watchedAt dates saved before the
+// "can't be earlier than the release date" rule existed. Only ever needs
+// to run once per device.
+export async function loadWatchedDateFixDone(): Promise<boolean> {
+  return (await AsyncStorage.getItem(WATCHED_DATE_FIX_KEY)) === "true";
+}
+
+export async function saveWatchedDateFixDone(): Promise<void> {
+  await AsyncStorage.setItem(WATCHED_DATE_FIX_KEY, "true");
 }

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import {
   ActivityIndicator,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -19,6 +21,7 @@ import { useWatchlist } from "@/context/WatchlistContext";
 import {
   estimateRuntimeMinutes,
   getDetails,
+  getReleaseDateFloor,
   posterUrl,
   providerLogoUrl,
   WATCH_PROVIDER_REGION,
@@ -31,48 +34,6 @@ function formatWatchedDate(iso: string | undefined): string {
     month: "long",
     year: "numeric",
   });
-}
-
-// A watched date earlier than the release date doesn't make sense — this is
-// the floor the date picker (and the final save) are clamped to.
-function getReleaseDateFloor(details: TMDBDetails): Date | null {
-  const raw = details.release_date || details.first_air_date;
-  if (!raw) return null;
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function DateField({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  min: number;
-  max: number;
-}) {
-  return (
-    <View className="items-center gap-1.5">
-      <Text className="text-[11px] text-text-secondary">{label}</Text>
-      <Pressable onPress={() => onChange(value >= max ? min : value + 1)} hitSlop={8}>
-        <Ionicons name="chevron-up" size={18} color="#9AA5B1" />
-      </Pressable>
-      <Text
-        className="text-lg font-semibold text-text-primary"
-        style={{ minWidth: 34, textAlign: "center" }}
-      >
-        {value}
-      </Text>
-      <Pressable onPress={() => onChange(value <= min ? max : value - 1)} hitSlop={8}>
-        <Ionicons name="chevron-down" size={18} color="#9AA5B1" />
-      </Pressable>
-    </View>
-  );
 }
 
 export default function DetailsScreen() {
@@ -90,19 +51,36 @@ export default function DetailsScreen() {
 
   const listItem = getItem(mediaType, id);
 
+  const commitWatchedDate = async (date: Date) => {
+    const floor = details && getReleaseDateFloor(details);
+    const base = floor && date < floor ? floor : date;
+    const noon = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 12);
+    await setWatchedAt(mediaType, id, noon.toISOString());
+  };
+
   const openDateModal = () => {
     const initial = listItem?.watchedAt ? new Date(listItem.watchedAt) : new Date();
     const floor = details && getReleaseDateFloor(details);
-    setDraftDate(floor && initial < floor ? floor : initial);
-    setIsDateModalVisible(true);
-  };
+    const value = floor && initial < floor ? floor : initial;
 
-  const handleSaveDate = async () => {
-    const floor = details && getReleaseDateFloor(details);
-    const base = floor && draftDate < floor ? floor : draftDate;
-    const noon = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 12);
-    await setWatchedAt(mediaType, id, noon.toISOString());
-    setIsDateModalVisible(false);
+    // Android's date picker is a native dialog opened imperatively — no
+    // modal of our own to render or manage. iOS renders the picker inline,
+    // so it needs a container with its own confirm/cancel.
+    if (Platform.OS === "android") {
+      DateTimePickerAndroid.open({
+        value,
+        mode: "date",
+        minimumDate: floor ?? undefined,
+        maximumDate: new Date(),
+        onValueChange: (_event, date) => {
+          void commitWatchedDate(date);
+        },
+      });
+      return;
+    }
+
+    setDraftDate(value);
+    setIsDateModalVisible(true);
   };
 
   useEffect(() => {
@@ -208,11 +186,6 @@ export default function DetailsScreen() {
   const providers = providerRegion?.flatrate ?? providerRegion?.rent ?? providerRegion?.buy;
 
   const releaseFloor = getReleaseDateFloor(details);
-  const isFloorYear = releaseFloor ? draftDate.getFullYear() === releaseFloor.getFullYear() : false;
-  const yearMin = releaseFloor?.getFullYear() ?? 1900;
-  const monthMin = isFloorYear && releaseFloor ? releaseFloor.getMonth() + 1 : 1;
-  const isFloorMonth = isFloorYear && releaseFloor && draftDate.getMonth() === releaseFloor.getMonth();
-  const dayMin = isFloorMonth && releaseFloor ? releaseFloor.getDate() : 1;
 
   return (
     <View className="flex-1 bg-background">
@@ -409,67 +382,47 @@ export default function DetailsScreen() {
         </SafeAreaView>
       </ScrollView>
 
-      <Modal
-        visible={isDateModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsDateModalVisible(false)}
-      >
-        <View className="flex-1 items-center justify-center bg-black/60 px-8">
-          <View className="w-full rounded-2xl bg-surface p-5">
-            <Text className="mb-4 text-center text-base font-semibold text-text-primary">
-              Date de visionnage
-            </Text>
-            <View className="flex-row items-center justify-center gap-6">
-              <DateField
-                label="Jour"
-                value={draftDate.getDate()}
-                min={dayMin}
-                max={31}
-                onChange={(day) =>
-                  setDraftDate(
-                    (prev) => new Date(prev.getFullYear(), prev.getMonth(), day, 12)
-                  )
-                }
+      {Platform.OS === "ios" ? (
+        <Modal
+          visible={isDateModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsDateModalVisible(false)}
+        >
+          <View className="flex-1 items-center justify-center bg-black/60 px-8">
+            <View className="w-full rounded-2xl bg-surface p-5">
+              <Text className="mb-4 text-center text-base font-semibold text-text-primary">
+                Date de visionnage
+              </Text>
+              <DateTimePicker
+                value={draftDate}
+                mode="date"
+                display="inline"
+                minimumDate={releaseFloor ?? undefined}
+                maximumDate={new Date()}
+                onValueChange={(_event, date) => setDraftDate(date)}
               />
-              <DateField
-                label="Mois"
-                value={draftDate.getMonth() + 1}
-                min={monthMin}
-                max={12}
-                onChange={(month) =>
-                  setDraftDate(
-                    (prev) => new Date(prev.getFullYear(), month - 1, prev.getDate(), 12)
-                  )
-                }
-              />
-              <DateField
-                label="Année"
-                value={draftDate.getFullYear()}
-                min={yearMin}
-                max={new Date().getFullYear()}
-                onChange={(year) =>
-                  setDraftDate((prev) => new Date(year, prev.getMonth(), prev.getDate(), 12))
-                }
-              />
-            </View>
-            <View className="mt-6 flex-row gap-2">
-              <Pressable
-                onPress={() => setIsDateModalVisible(false)}
-                className="flex-1 items-center rounded-xl bg-background py-3"
-              >
-                <Text className="text-sm font-semibold text-text-secondary">Annuler</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSaveDate}
-                className="flex-1 items-center rounded-xl bg-primary py-3"
-              >
-                <Text className="text-sm font-semibold text-white">Valider</Text>
-              </Pressable>
+              <View className="mt-6 flex-row gap-2">
+                <Pressable
+                  onPress={() => setIsDateModalVisible(false)}
+                  className="flex-1 items-center rounded-xl bg-background py-3"
+                >
+                  <Text className="text-sm font-semibold text-text-secondary">Annuler</Text>
+                </Pressable>
+                <Pressable
+                  onPress={async () => {
+                    await commitWatchedDate(draftDate);
+                    setIsDateModalVisible(false);
+                  }}
+                  className="flex-1 items-center rounded-xl bg-primary py-3"
+                >
+                  <Text className="text-sm font-semibold text-white">Valider</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      ) : null}
     </View>
   );
 }
