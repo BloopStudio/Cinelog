@@ -33,6 +33,16 @@ function formatWatchedDate(iso: string | undefined): string {
   });
 }
 
+// A watched date earlier than the release date doesn't make sense — this is
+// the floor the date picker (and the final save) are clamped to.
+function getReleaseDateFloor(details: TMDBDetails): Date | null {
+  const raw = details.release_date || details.first_air_date;
+  if (!raw) return null;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 function DateField({
   label,
   value,
@@ -81,17 +91,16 @@ export default function DetailsScreen() {
   const listItem = getItem(mediaType, id);
 
   const openDateModal = () => {
-    setDraftDate(listItem?.watchedAt ? new Date(listItem.watchedAt) : new Date());
+    const initial = listItem?.watchedAt ? new Date(listItem.watchedAt) : new Date();
+    const floor = details && getReleaseDateFloor(details);
+    setDraftDate(floor && initial < floor ? floor : initial);
     setIsDateModalVisible(true);
   };
 
   const handleSaveDate = async () => {
-    const noon = new Date(
-      draftDate.getFullYear(),
-      draftDate.getMonth(),
-      draftDate.getDate(),
-      12
-    );
+    const floor = details && getReleaseDateFloor(details);
+    const base = floor && draftDate < floor ? floor : draftDate;
+    const noon = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 12);
     await setWatchedAt(mediaType, id, noon.toISOString());
     setIsDateModalVisible(false);
   };
@@ -197,6 +206,13 @@ export default function DetailsScreen() {
 
   const providerRegion = details["watch/providers"]?.results?.[WATCH_PROVIDER_REGION];
   const providers = providerRegion?.flatrate ?? providerRegion?.rent ?? providerRegion?.buy;
+
+  const releaseFloor = getReleaseDateFloor(details);
+  const isFloorYear = releaseFloor ? draftDate.getFullYear() === releaseFloor.getFullYear() : false;
+  const yearMin = releaseFloor?.getFullYear() ?? 1900;
+  const monthMin = isFloorYear && releaseFloor ? releaseFloor.getMonth() + 1 : 1;
+  const isFloorMonth = isFloorYear && releaseFloor && draftDate.getMonth() === releaseFloor.getMonth();
+  const dayMin = isFloorMonth && releaseFloor ? releaseFloor.getDate() : 1;
 
   return (
     <View className="flex-1 bg-background">
@@ -408,7 +424,7 @@ export default function DetailsScreen() {
               <DateField
                 label="Jour"
                 value={draftDate.getDate()}
-                min={1}
+                min={dayMin}
                 max={31}
                 onChange={(day) =>
                   setDraftDate(
@@ -419,7 +435,7 @@ export default function DetailsScreen() {
               <DateField
                 label="Mois"
                 value={draftDate.getMonth() + 1}
-                min={1}
+                min={monthMin}
                 max={12}
                 onChange={(month) =>
                   setDraftDate(
@@ -430,7 +446,7 @@ export default function DetailsScreen() {
               <DateField
                 label="Année"
                 value={draftDate.getFullYear()}
-                min={1900}
+                min={yearMin}
                 max={new Date().getFullYear()}
                 onChange={(year) =>
                   setDraftDate((prev) => new Date(year, prev.getMonth(), prev.getDate(), 12))
