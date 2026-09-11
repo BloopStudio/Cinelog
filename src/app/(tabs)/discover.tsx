@@ -34,12 +34,8 @@ export default function DiscoverScreen() {
   }, []);
 
   const discoverItems = useMemo(() => {
-    const seenOrInProgress = new Set(
-      items
-        .filter((item) => item.status === "watched" || item.status === "watching")
-        .map((item) => `${item.mediaType}-${item.id}`)
-    );
-    return trending.filter((item) => !seenOrInProgress.has(`${item.media_type}-${item.id}`));
+    const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
+    return trending.filter((item) => !alreadyInList.has(`${item.media_type}-${item.id}`));
   }, [trending, items]);
 
   return (
