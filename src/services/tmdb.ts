@@ -115,6 +115,19 @@ export function getReleaseDateFloor(details: TMDBDetails): Date | null {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+// TMDB keeps recommendations within the same media type as the source
+// title (movie → movies, tv → tv shows), and the results don't carry a
+// media_type field of their own since the endpoint is already scoped.
+export async function getRecommendations(
+  mediaType: MediaType,
+  id: number
+): Promise<TMDBSearchResult[]> {
+  const data = await tmdbFetch<{ results: TMDBSearchResult[] }>(
+    `/${mediaType}/${id}/recommendations`
+  );
+  return data.results.map((item) => ({ ...item, media_type: mediaType }));
+}
+
 // Movies carry their own runtime; TV shows don't (TMDB gives per-episode
 // runtime instead), so it's approximated as episodes × runtime, falling
 // back to a 45min/episode estimate when TMDB doesn't provide one.
@@ -128,7 +141,7 @@ export function estimateRuntimeMinutes(
   return details.number_of_episodes * perEpisode;
 }
 
-function shuffle<T>(items: T[]): T[] {
+export function shuffle<T>(items: T[]): T[] {
   const shuffled = [...items];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

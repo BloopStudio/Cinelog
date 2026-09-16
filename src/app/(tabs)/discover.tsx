@@ -1,22 +1,37 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, FlatList, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { PosterTile } from "@/components/PosterTile";
 import { useWatchlist } from "@/context/WatchlistContext";
-import { getTrending } from "@/services/tmdb";
-import type { TMDBSearchResult } from "@/types";
+import { getRecommendations, getTrending, shuffle } from "@/services/tmdb";
+import type { TMDBSearchResult, WatchlistItem } from "@/types";
 
 const SCREEN_PADDING = 16;
 const TILE_GAP = 12;
 const MIN_TILE_WIDTH = 100;
+const RECOMMENDATION_SOURCE_COUNT = 4;
+const RECOMMENDATION_COUNT = 9;
+
+function pickRecommendationSources(items: WatchlistItem[]): WatchlistItem[] {
+  return [...items]
+    .filter((item) => item.status === "watched")
+    .sort((a, b) => {
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      const dateA = new Date(a.watchedAt ?? a.addedAt).getTime();
+      const dateB = new Date(b.watchedAt ?? b.addedAt).getTime();
+      return dateB - dateA;
+    })
+    .slice(0, RECOMMENDATION_SOURCE_COUNT);
+}
 
 export default function DiscoverScreen() {
   const { items } = useWatchlist();
   const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [recommended, setRecommended] = useState<TMDBSearchResult[]>([]);
   const { width } = useWindowDimensions();
 
   const numColumns = Math.max(
@@ -32,6 +47,35 @@ export default function DiscoverScreen() {
       .catch(() => setTrending([]))
       .finally(() => setIsLoading(false));
   }, []);
+
+  const sourceItems = useMemo(() => pickRecommendationSources(items), [items]);
+  const sourceKey = sourceItems.map((item) => `${item.mediaType}-${item.id}`).join(",");
+
+  useEffect(() => {
+    if (sourceItems.length === 0) {
+      setRecommended([]);
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      sourceItems.map((item) => getRecommendations(item.mediaType, item.id).catch(() => []))
+    ).then((lists) => {
+      if (cancelled) return;
+      const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
+      const seen = new Set<string>();
+      const combined = lists.flat().filter((rec) => {
+        const key = `${rec.media_type}-${rec.id}`;
+        if (alreadyInList.has(key) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      setRecommended(shuffle(combined).slice(0, RECOMMENDATION_COUNT));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceKey]);
 
   const discoverItems = useMemo(() => {
     const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
@@ -51,7 +95,7 @@ export default function DiscoverScreen() {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#E63946" />
         </View>
-      ) : discoverItems.length === 0 ? (
+      ) : discoverItems.length === 0 && recommended.length === 0 ? (
         <EmptyState
           icon="compass-outline"
           title="Rien à découvrir"
@@ -66,6 +110,38 @@ export default function DiscoverScreen() {
           removeClippedSubviews={false}
           contentContainerStyle={{ padding: SCREEN_PADDING }}
           columnWrapperStyle={{ gap: TILE_GAP, marginBottom: 16 }}
+          ListHeaderComponent={
+            recommended.length > 0 ? (
+              <View className="mb-6">
+                <Text className="mb-1 text-base font-semibold text-text-primary">
+                  Recommandé pour toi
+                </Text>
+                <Text className="mb-3 text-xs text-text-secondary">
+                  D'après tes films et séries les mieux notés
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: TILE_GAP }}
+                >
+                  {recommended.map((item) => (
+                    <PosterTile
+                      key={`${item.media_type}-${item.id}`}
+                      title={item.title ?? item.name ?? "Sans titre"}
+                      posterPath={item.poster_path}
+                      subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
+                      onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+                    />
+                  ))}
+                </ScrollView>
+                {discoverItems.length > 0 ? (
+                  <Text className="mb-3 mt-6 text-base font-semibold text-text-primary">
+                    Tendances
+                  </Text>
+                ) : null}
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => (
             <PosterTile
               title={item.title ?? item.name ?? "Sans titre"}
