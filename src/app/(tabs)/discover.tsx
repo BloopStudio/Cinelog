@@ -12,19 +12,30 @@ import type { TMDBSearchResult, WatchlistItem } from "@/types";
 const SCREEN_PADDING = 16;
 const TILE_GAP = 12;
 const MIN_TILE_WIDTH = 100;
-const RECOMMENDATION_SOURCE_COUNT = 4;
+// Sources come from the top 3% best-rated watched titles, not a fixed
+// count — clamped between 1 (so it still works with a small list) and 15
+// (so a huge list doesn't fire off dozens of parallel TMDB calls).
+const RECOMMENDATION_SOURCE_PERCENTILE = 0.03;
+const RECOMMENDATION_SOURCE_MAX = 15;
 const RECOMMENDATION_COUNT = 9;
 
 function pickRecommendationSources(items: WatchlistItem[]): WatchlistItem[] {
-  return [...items]
-    .filter((item) => item.status === "watched")
+  const rated = [...items]
+    .filter((item) => item.status === "watched" && item.rating > 0)
     .sort((a, b) => {
       if (b.rating !== a.rating) return b.rating - a.rating;
       const dateA = new Date(a.watchedAt ?? a.addedAt).getTime();
       const dateB = new Date(b.watchedAt ?? b.addedAt).getTime();
       return dateB - dateA;
-    })
-    .slice(0, RECOMMENDATION_SOURCE_COUNT);
+    });
+
+  if (rated.length === 0) return [];
+
+  const count = Math.min(
+    RECOMMENDATION_SOURCE_MAX,
+    Math.max(1, Math.ceil(rated.length * RECOMMENDATION_SOURCE_PERCENTILE))
+  );
+  return rated.slice(0, count);
 }
 
 export default function DiscoverScreen() {
