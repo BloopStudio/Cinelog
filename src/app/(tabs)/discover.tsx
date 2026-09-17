@@ -19,6 +19,14 @@ const RECOMMENDATION_SOURCE_PERCENTILE = 0.03;
 const RECOMMENDATION_SOURCE_MAX = 15;
 const RECOMMENDATION_COUNT = 9;
 
+function chunk<T>(items: T[], size: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    rows.push(items.slice(i, i + size));
+  }
+  return rows;
+}
+
 function pickRecommendationSources(items: WatchlistItem[]): WatchlistItem[] {
   const rated = [...items]
     .filter((item) => item.status === "watched" && item.rating > 0)
@@ -130,18 +138,24 @@ export default function DiscoverScreen() {
                 <Text className="mb-3 text-xs text-text-secondary">
                   D'après tes films et séries les mieux notés
                 </Text>
-                <View className="flex-row flex-wrap" style={{ gap: TILE_GAP }}>
-                  {recommended.map((item) => (
-                    <PosterTile
-                      key={`${item.media_type}-${item.id}`}
-                      title={item.title ?? item.name ?? "Sans titre"}
-                      posterPath={item.poster_path}
-                      subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
-                      onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
-                      width={tileWidth}
-                    />
-                  ))}
-                </View>
+                {chunk(recommended, numColumns).map((row, rowIndex) => (
+                  <View
+                    key={rowIndex}
+                    className="flex-row"
+                    style={{ gap: TILE_GAP, marginBottom: 16 }}
+                  >
+                    {row.map((item) => (
+                      <PosterTile
+                        key={`${item.media_type}-${item.id}`}
+                        title={item.title ?? item.name ?? "Sans titre"}
+                        posterPath={item.poster_path}
+                        subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
+                        onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+                        width={tileWidth}
+                      />
+                    ))}
+                  </View>
+                ))}
                 {discoverItems.length > 0 ? (
                   <Text className="mb-3 mt-6 text-base font-semibold text-text-primary">
                     Tendances
