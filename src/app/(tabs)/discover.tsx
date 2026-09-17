@@ -50,7 +50,7 @@ export default function DiscoverScreen() {
   const { items } = useWatchlist();
   const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [recommended, setRecommended] = useState<TMDBSearchResult[]>([]);
+  const [recommendedPool, setRecommendedPool] = useState<TMDBSearchResult[]>([]);
   const { width } = useWindowDimensions();
 
   const numColumns = Math.max(
@@ -72,7 +72,7 @@ export default function DiscoverScreen() {
 
   useEffect(() => {
     if (sourceItems.length === 0) {
-      setRecommended([]);
+      setRecommendedPool([]);
       return;
     }
     let cancelled = false;
@@ -80,15 +80,14 @@ export default function DiscoverScreen() {
       sourceItems.map((item) => getRecommendations(item.mediaType, item.id).catch(() => []))
     ).then((lists) => {
       if (cancelled) return;
-      const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
       const seen = new Set<string>();
       const combined = lists.flat().filter((rec) => {
         const key = `${rec.media_type}-${rec.id}`;
-        if (alreadyInList.has(key) || seen.has(key)) return false;
+        if (seen.has(key)) return false;
         seen.add(key);
         return true;
       });
-      setRecommended(shuffle(combined).slice(0, RECOMMENDATION_COUNT));
+      setRecommendedPool(shuffle(combined));
     });
     return () => {
       cancelled = true;
@@ -100,6 +99,16 @@ export default function DiscoverScreen() {
     const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
     return trending.filter((item) => !alreadyInList.has(`${item.media_type}-${item.id}`));
   }, [trending, items]);
+
+  // Pulled fresh from the pool (not re-shuffled) every time `items` changes,
+  // so adding a recommended title to the list drops it here and the next
+  // title in the pool takes its place instead of leaving a gap.
+  const recommended = useMemo(() => {
+    const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
+    return recommendedPool
+      .filter((item) => !alreadyInList.has(`${item.media_type}-${item.id}`))
+      .slice(0, RECOMMENDATION_COUNT);
+  }, [recommendedPool, items]);
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
