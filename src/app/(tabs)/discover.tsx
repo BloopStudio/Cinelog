@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, FlatList, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -130,11 +130,7 @@ export default function DiscoverScreen() {
                 <Text className="mb-3 text-xs text-text-secondary">
                   D'après tes films et séries les mieux notés
                 </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: TILE_GAP }}
-                >
+                <View className="flex-row flex-wrap" style={{ gap: TILE_GAP }}>
                   {recommended.map((item) => (
                     <PosterTile
                       key={`${item.media_type}-${item.id}`}
@@ -142,9 +138,10 @@ export default function DiscoverScreen() {
                       posterPath={item.poster_path}
                       subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
                       onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+                      width={tileWidth}
                     />
                   ))}
-                </ScrollView>
+                </View>
                 {discoverItems.length > 0 ? (
                   <Text className="mb-3 mt-6 text-base font-semibold text-text-primary">
                     Tendances
