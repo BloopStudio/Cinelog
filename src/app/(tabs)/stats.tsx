@@ -115,7 +115,12 @@ export default function StatsScreen() {
                       style={{ width: `${Math.max(6, (count / maxGenreCount) * 100)}%` }}
                     />
                   </View>
-                  <Text className="w-5 text-right text-xs text-text-secondary">{count}</Text>
+                  <Text
+                    numberOfLines={1}
+                    className="w-8 text-right text-xs text-text-secondary"
+                  >
+                    {count}
+                  </Text>
                 </View>
               ))}
             </View>
