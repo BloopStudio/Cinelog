@@ -13,10 +13,12 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PressScale } from "@/components/PressScale";
 import { RatingStars } from "@/components/RatingStars";
+import { posterTransition } from "@/constants/sharedTransitions";
 import { STATUS_LABELS, STATUS_ORDER } from "@/constants/status";
 import { useWatchlist } from "@/context/WatchlistContext";
 import {
@@ -28,6 +30,8 @@ import {
   WATCH_PROVIDER_REGION,
 } from "@/services/tmdb";
 import type { MediaType, TMDBDetails, WatchStatus } from "@/types";
+
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 function formatWatchedDate(iso: string | undefined): string {
   return (iso ? new Date(iso) : new Date()).toLocaleDateString("fr-FR", {
@@ -195,11 +199,13 @@ export default function DetailsScreen() {
     <View className="flex-1 bg-background">
       <ScrollView bounces={false}>
         <View className="relative">
-          <Image
+          <AnimatedImage
             source={posterUrl(details.poster_path, "w500") ?? undefined}
-            style={{ width: "100%", height: 420 }}
+            sharedTransitionTag={`poster-${mediaType}-${id}`}
+            sharedTransitionStyle={posterTransition}
+            // Plain style, not className: see PosterTile for why.
+            style={{ width: "100%", height: 420, backgroundColor: "#1E2630" }}
             contentFit="cover"
-            className="bg-surface-alt"
           />
           <View className="absolute bottom-0 left-0 right-0 h-24 bg-background/0" />
         </View>

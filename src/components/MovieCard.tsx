@@ -1,11 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import { RatingStars } from "@/components/RatingStars";
 import { StatusBadge } from "@/components/StatusBadge";
+import { posterTransition } from "@/constants/sharedTransitions";
 import { posterUrl } from "@/services/tmdb";
 import type { WatchlistItem } from "@/types";
+
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 interface MovieCardProps {
   title: string;
@@ -15,6 +19,8 @@ interface MovieCardProps {
   rating?: number;
   onPress: () => void;
   onRemove?: () => void;
+  // Matches the tag on the details screen's own poster, see PosterTile.
+  transitionTag?: string;
 }
 
 export function MovieCard({
@@ -25,18 +31,21 @@ export function MovieCard({
   rating,
   onPress,
   onRemove,
+  transitionTag,
 }: MovieCardProps) {
   return (
     <Pressable
       onPress={onPress}
       className="mb-3 flex-row overflow-hidden rounded-2xl bg-surface active:opacity-80"
     >
-      <Image
+      <AnimatedImage
         source={posterUrl(posterPath) ?? undefined}
-        style={{ width: 84, height: 126 }}
+        sharedTransitionTag={transitionTag}
+        sharedTransitionStyle={posterTransition}
+        // Plain style, not className: see PosterTile for why.
+        style={{ width: 84, height: 126, backgroundColor: "#1E2630" }}
         contentFit="cover"
         transition={150}
-        className="bg-surface-alt"
       />
       <View className="flex-1 justify-between p-3">
         <View>

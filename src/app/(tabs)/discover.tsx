@@ -217,6 +217,7 @@ export default function DiscoverScreen() {
                           subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
                           onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
                           width={tileWidth}
+                          transitionTag={`poster-${item.media_type}-${item.id}`}
                         />
                       ))}
                     </View>
@@ -238,6 +239,7 @@ export default function DiscoverScreen() {
               subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
               onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
               width={tileWidth}
+              transitionTag={`poster-${item.media_type}-${item.id}`}
             />
           )}
         />

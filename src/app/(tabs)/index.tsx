@@ -274,6 +274,7 @@ export default function WatchlistScreen() {
                 router.push(`/details/${item.mediaType}/${item.id}`)
               }
               onRemove={() => removeItem(item.mediaType, item.id)}
+              transitionTag={`poster-${item.mediaType}-${item.id}`}
             />
           )}
         />

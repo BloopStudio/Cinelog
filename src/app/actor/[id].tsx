@@ -83,6 +83,7 @@ export default function ActorScreen() {
                 status={listItem?.status}
                 rating={listItem?.rating}
                 onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+                transitionTag={`poster-${item.media_type}-${item.id}`}
               />
             );
           }}
