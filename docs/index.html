@@ -41,16 +41,32 @@
   <p>
     CinéLog ne demande aucune création de compte, ne collecte, ne stocke et
     ne transmet aucune donnée personnelle identifiable (nom, email, numéro
-    de téléphone, localisation, identifiants publicitaires, etc.).
+    de téléphone, localisation, identifiants publicitaires, etc.), y
+    compris avec la synchronisation optionnelle décrite ci-dessous.
   </p>
 
-  <h2>Stockage 100% local</h2>
+  <h2>Stockage local par défaut</h2>
   <p>
-    Ta liste de films et séries (statuts, notes) est enregistrée
-    uniquement sur ton appareil, via le stockage local de l'application
-    (AsyncStorage). Ces données ne quittent jamais ton téléphone : elles ne
-    sont envoyées à aucun serveur, ni à BloopStudio, ni à un tiers. Si tu
-    désinstalles l'application, ces données sont définitivement supprimées.
+    Par défaut, ta liste de films et séries (statuts, notes, dates de
+    visionnage) est enregistrée uniquement sur ton appareil, via le
+    stockage local de l'application (AsyncStorage). Ces données ne quittent
+    jamais ton téléphone. Si tu désinstalles l'application, elles sont
+    définitivement supprimées.
+  </p>
+
+  <h2>Synchronisation optionnelle « Partager ma liste »</h2>
+  <p>
+    Si tu actives volontairement cette fonctionnalité (icône en haut de
+    l'écran « Ma liste »), le contenu de ta liste (titres, statuts, notes,
+    dates de visionnage, saison en cours) est alors envoyé et conservé sur
+    les serveurs de <a href="https://firebase.google.com" target="_blank" rel="noopener">Firebase</a>
+    (Google), pour permettre à un autre téléphone connaissant le même code à
+    8 caractères d'accéder à la même liste. L'accès se fait via une
+    authentification anonyme Firebase : aucun nom, email ou autre
+    identifiant personnel n'est associé à ces données. Cette liste partagée
+    reste accessible à quiconque possède le code tant qu'elle existe sur
+    Firebase. Sans activation de cette fonctionnalité, rien n'est jamais
+    envoyé à un serveur.
   </p>
 
   <h2>API The Movie Database (TMDB)</h2>
