@@ -71,13 +71,6 @@ export default function DiscoverScreen() {
   const [recommendedPool, setRecommendedPool] = useState<TMDBSearchResult[]>([]);
   const { width } = useWindowDimensions();
 
-  // Wait for both before showing anything, not just Tendances — otherwise
-  // Tendances can appear first and "Recommandé pour toi" pops in above it a
-  // moment later once its (slower, N TMDB calls) fetch catches up, shifting
-  // everything down. This keeps the on-screen order (recommandé, then
-  // tendances) matching the load order.
-  const isLoading = isLoadingTrending || isLoadingRecommendations;
-
   const numColumns = Math.max(
     3,
     Math.floor((width - SCREEN_PADDING * 2 + TILE_GAP) / (MIN_TILE_WIDTH + TILE_GAP))
@@ -142,6 +135,18 @@ export default function DiscoverScreen() {
       .slice(0, RECOMMENDATION_COUNT);
   }, [recommendedPool, items]);
 
+  const renderSkeletonRows = (count: number) => (
+    <>
+      {chunk(Array.from({ length: count }, (_, i) => i), numColumns).map((row, rowIndex) => (
+        <View key={rowIndex} className="flex-row" style={{ gap: TILE_GAP, marginBottom: 16 }}>
+          {row.map((i) => (
+            <SkeletonPosterTile key={i} width={tileWidth} />
+          ))}
+        </View>
+      ))}
+    </>
+  );
+
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <View className="px-4 pb-2 pt-4">
@@ -151,23 +156,21 @@ export default function DiscoverScreen() {
         </Text>
       </View>
 
-      {isLoading ? (
+      {isLoadingRecommendations ? (
+        // Stage 1 — only "Recommandé pour toi" loads/shows here; Tendances
+        // doesn't start rendering (not even its own skeleton) until this
+        // resolves, so the two sections genuinely appear in order rather
+        // than popping in whenever each fetch happens to finish.
         <View style={{ padding: SCREEN_PADDING }}>
-          {chunk(Array.from({ length: numColumns * 3 }, (_, i) => i), numColumns).map(
-            (row, rowIndex) => (
-              <View
-                key={rowIndex}
-                className="flex-row"
-                style={{ gap: TILE_GAP, marginBottom: 16 }}
-              >
-                {row.map((i) => (
-                  <SkeletonPosterTile key={i} width={tileWidth} />
-                ))}
-              </View>
-            )
-          )}
+          <Text className="mb-1 text-base font-semibold text-text-primary">
+            Recommandé pour toi
+          </Text>
+          <Text className="mb-3 text-xs text-text-secondary">
+            D'après tes films et séries les mieux notés
+          </Text>
+          {renderSkeletonRows(numColumns * 3)}
         </View>
-      ) : discoverItems.length === 0 && recommended.length === 0 ? (
+      ) : !isLoadingTrending && discoverItems.length === 0 && recommended.length === 0 ? (
         <EmptyState
           icon="compass-outline"
           title="Rien à découvrir"
@@ -176,7 +179,7 @@ export default function DiscoverScreen() {
       ) : (
         <FlatList
           key={numColumns}
-          data={discoverItems}
+          data={isLoadingTrending ? [] : discoverItems}
           numColumns={numColumns}
           keyExtractor={(item) => `${item.media_type}-${item.id}`}
           removeClippedSubviews={false}
@@ -191,40 +194,43 @@ export default function DiscoverScreen() {
             />
           }
           ListHeaderComponent={
-            recommended.length > 0 ? (
-              <View className="mb-6">
-                <Text className="mb-1 text-base font-semibold text-text-primary">
-                  Recommandé pour toi
-                </Text>
-                <Text className="mb-3 text-xs text-text-secondary">
-                  D'après tes films et séries les mieux notés
-                </Text>
-                {chunk(recommended, numColumns).map((row, rowIndex) => (
-                  <View
-                    key={rowIndex}
-                    className="flex-row"
-                    style={{ gap: TILE_GAP, marginBottom: 16 }}
-                  >
-                    {row.map((item) => (
-                      <PosterTile
-                        key={`${item.media_type}-${item.id}`}
-                        title={item.title ?? item.name ?? "Sans titre"}
-                        posterPath={item.poster_path}
-                        subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
-                        onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
-                        width={tileWidth}
-                      />
-                    ))}
-                  </View>
-                ))}
-                {discoverItems.length > 0 ? (
-                  <Text className="mb-3 mt-6 text-base font-semibold text-text-primary">
-                    Tendances
+            <View className="mb-6">
+              {recommended.length > 0 ? (
+                <>
+                  <Text className="mb-1 text-base font-semibold text-text-primary">
+                    Recommandé pour toi
                   </Text>
-                ) : null}
-              </View>
-            ) : null
+                  <Text className="mb-3 text-xs text-text-secondary">
+                    D'après tes films et séries les mieux notés
+                  </Text>
+                  {chunk(recommended, numColumns).map((row, rowIndex) => (
+                    <View
+                      key={rowIndex}
+                      className="flex-row"
+                      style={{ gap: TILE_GAP, marginBottom: 16 }}
+                    >
+                      {row.map((item) => (
+                        <PosterTile
+                          key={`${item.media_type}-${item.id}`}
+                          title={item.title ?? item.name ?? "Sans titre"}
+                          posterPath={item.poster_path}
+                          subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
+                          onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+                          width={tileWidth}
+                        />
+                      ))}
+                    </View>
+                  ))}
+                </>
+              ) : null}
+              {isLoadingTrending || discoverItems.length > 0 ? (
+                <Text className="mb-3 mt-6 text-base font-semibold text-text-primary">
+                  Tendances
+                </Text>
+              ) : null}
+            </View>
           }
+          ListFooterComponent={isLoadingTrending ? renderSkeletonRows(numColumns * 3) : null}
           renderItem={({ item }) => (
             <PosterTile
               title={item.title ?? item.name ?? "Sans titre"}
