@@ -24,6 +24,16 @@ on:
 permissions:
   contents: write # nécessaire pour créer une GitHub Release sur les tags
 
+# Un seul run à la fois : l'étape Play Store crée une "Edit" côté Google pour
+# le package, et deux runs qui la commitent à quelques secondes d'intervalle
+# se marchent dessus — Google rejette alors le rollout avec une erreur du
+# type "does not allow any existing users to upgrade". cancel-in-progress à
+# false pour que chaque push soit quand même buildé et publié, juste en
+# file d'attente plutôt qu'en parallèle.
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
