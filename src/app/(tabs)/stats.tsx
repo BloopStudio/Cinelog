@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,6 +28,55 @@ function GenreBar({ genre, count, pct }: { genre: string; count: number; pct: nu
       <Text numberOfLines={1} className="w-8 text-right text-xs text-text-secondary">
         {count}
       </Text>
+    </View>
+  );
+}
+
+// Counts up from 0 to `value` on mount/change instead of rendering the
+// final number straight away — plain JS state on a rAF loop rather than
+// reanimated, since the thing being animated is text content, not a style.
+function useCountUp(target: number, duration = 700) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    let frame: number;
+    const start = Date.now();
+
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      setDisplay(Math.round(target * eased));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, duration]);
+
+  return display;
+}
+
+function CountStatTile({
+  label,
+  value,
+  suffix = "",
+  emptyLabel,
+}: {
+  label: string;
+  value: number;
+  suffix?: string;
+  emptyLabel?: string;
+}) {
+  const display = useCountUp(value);
+  const showEmpty = value === 0 && emptyLabel !== undefined;
+
+  return (
+    <View className="flex-1 rounded-2xl bg-surface p-4">
+      <Text numberOfLines={1} className="text-xl font-bold text-text-primary">
+        {showEmpty ? emptyLabel : `${display}${suffix}`}
+      </Text>
+      <Text className="mt-1 text-xs text-text-secondary">{label}</Text>
     </View>
   );
 }
@@ -129,8 +178,8 @@ export default function StatsScreen() {
 
         <View className="gap-3">
           <View className="flex-row gap-3">
-            <StatTile label="titres vus" value={String(watched.length)} />
-            <StatTile label="temps estimé" value={totalHours > 0 ? `${totalHours}h` : "—"} />
+            <CountStatTile label="titres vus" value={watched.length} />
+            <CountStatTile label="temps estimé" value={totalHours} suffix="h" emptyLabel="—" />
           </View>
           <View className="flex-row gap-3">
             <RatingTile averageRating={averageRating} />

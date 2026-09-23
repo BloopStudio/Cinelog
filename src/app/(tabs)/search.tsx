@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -125,28 +126,37 @@ export default function SearchScreen() {
               </View>
             ) : null
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
+            // Staggered up to the first 8 rows only — a page-2 "load more"
+            // append shouldn't inherit a multi-second delay from its index
+            // in the full results array.
+            const delay = Math.min(index, 8) * 40;
+
             if (item.media_type === "person") {
               return (
-                <PersonCard
-                  name={item.name}
-                  profilePath={item.profile_path}
-                  onPress={() => router.push(`/actor/${item.id}`)}
-                />
+                <Animated.View entering={FadeInDown.delay(delay).duration(250)}>
+                  <PersonCard
+                    name={item.name}
+                    profilePath={item.profile_path}
+                    onPress={() => router.push(`/actor/${item.id}`)}
+                  />
+                </Animated.View>
               );
             }
 
             const listItem = getItem(item.media_type, item.id);
 
             return (
-              <MovieCard
-                title={item.title ?? item.name ?? "Sans titre"}
-                posterPath={item.poster_path}
-                subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
-                status={listItem?.status}
-                rating={listItem?.rating}
-                onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
-              />
+              <Animated.View entering={FadeInDown.delay(delay).duration(250)}>
+                <MovieCard
+                  title={item.title ?? item.name ?? "Sans titre"}
+                  posterPath={item.poster_path}
+                  subtitle={(item.release_date ?? item.first_air_date)?.slice(0, 4)}
+                  status={listItem?.status}
+                  rating={listItem?.rating}
+                  onPress={() => router.push(`/details/${item.media_type}/${item.id}`)}
+                />
+              </Animated.View>
             );
           }}
         />

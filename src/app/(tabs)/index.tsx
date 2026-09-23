@@ -1,7 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  type LayoutChangeEvent,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -25,6 +34,76 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "rating", label: "Mieux notés" },
   { value: "title", label: "Titre A-Z" },
 ];
+
+type ChipRect = { x: number; y: number; width: number; height: number };
+
+// A red pill that slides/resizes to sit behind whichever filter chip is
+// active, instead of each chip just flipping its own background — the
+// chips are variable width, so the indicator's target rect is whatever
+// that chip measured onLayout, not a fixed fraction of the row.
+function FilterChips({ filter, onChange }: { filter: Filter; onChange: (value: Filter) => void }) {
+  const rects = useRef<Partial<Record<Filter, ChipRect>>>({});
+  const left = useSharedValue(0);
+  const top = useSharedValue(0);
+  const width = useSharedValue(0);
+  const height = useSharedValue(0);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const rect = rects.current[filter];
+    if (!rect) return;
+    left.value = withTiming(rect.x, { duration: 220 });
+    top.value = withTiming(rect.y, { duration: 220 });
+    width.value = withTiming(rect.width, { duration: 220 });
+    height.value = withTiming(rect.height, { duration: 220 });
+  }, [filter, left, top, width, height]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    position: "absolute",
+    left: left.value,
+    top: top.value,
+    width: width.value,
+    height: height.value,
+  }));
+
+  const handleLayout = (value: Filter) => (event: LayoutChangeEvent) => {
+    const { x, y, width: w, height: h } = event.nativeEvent.layout;
+    rects.current[value] = { x, y, width: w, height: h };
+    if (value === filter && !ready) {
+      left.value = x;
+      top.value = y;
+      width.value = w;
+      height.value = h;
+      setReady(true);
+    }
+  };
+
+  return (
+    <View className="flex-row flex-wrap gap-2 px-4" style={{ position: "relative" }}>
+      <Animated.View
+        className="rounded-full bg-primary"
+        style={[indicatorStyle, { opacity: ready ? 1 : 0 }]}
+      />
+      {FILTERS.map((value) => {
+        const active = filter === value;
+        return (
+          <Pressable
+            key={value}
+            onLayout={handleLayout(value)}
+            onPress={() => onChange(value)}
+            className={`rounded-full px-3.5 py-2 ${active ? "" : "bg-surface"}`}
+          >
+            <Text
+              className={`text-xs font-semibold ${active ? "text-white" : "text-text-secondary"}`}
+            >
+              {value === "all" ? "Tout" : STATUS_LABELS[value]}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function WatchlistScreen() {
   const { items, isLoading, removeItem } = useWatchlist();
@@ -67,26 +146,7 @@ export default function WatchlistScreen() {
       </View>
 
       <View className="gap-3 pb-3 pt-3">
-        <View className="flex-row flex-wrap gap-2 px-4">
-          {FILTERS.map((value) => {
-            const active = filter === value;
-            return (
-              <Pressable
-                key={value}
-                onPress={() => setFilter(value)}
-                className={`rounded-full px-3.5 py-2 ${active ? "bg-primary" : "bg-surface"}`}
-              >
-                <Text
-                  className={`text-xs font-semibold ${
-                    active ? "text-white" : "text-text-secondary"
-                  }`}
-                >
-                  {value === "all" ? "Tout" : STATUS_LABELS[value]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <FilterChips filter={filter} onChange={setFilter} />
 
         <View className="flex-row items-center gap-2 px-4">
           {MEDIA_TYPE_FILTERS.map(({ value, label }) => {
