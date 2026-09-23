@@ -65,10 +65,18 @@ async function loadRecommendationPool(sourceItems: WatchlistItem[]): Promise<TMD
 export default function DiscoverScreen() {
   const { items } = useWatchlist();
   const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingTrending, setIsLoadingTrending] = useState(true);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [recommendedPool, setRecommendedPool] = useState<TMDBSearchResult[]>([]);
   const { width } = useWindowDimensions();
+
+  // Wait for both before showing anything, not just Tendances — otherwise
+  // Tendances can appear first and "Recommandé pour toi" pops in above it a
+  // moment later once its (slower, N TMDB calls) fetch catches up, shifting
+  // everything down. This keeps the on-screen order (recommandé, then
+  // tendances) matching the load order.
+  const isLoading = isLoadingTrending || isLoadingRecommendations;
 
   const numColumns = Math.max(
     3,
@@ -81,7 +89,7 @@ export default function DiscoverScreen() {
     getTrending()
       .then(setTrending)
       .catch(() => setTrending([]))
-      .finally(() => setIsLoading(false));
+      .finally(() => setIsLoadingTrending(false));
   }, []);
 
   const sourceItems = useMemo(() => pickRecommendationSources(items), [items]);
@@ -90,7 +98,10 @@ export default function DiscoverScreen() {
   useEffect(() => {
     let cancelled = false;
     loadRecommendationPool(sourceItems).then((pool) => {
-      if (!cancelled) setRecommendedPool(pool);
+      if (!cancelled) {
+        setRecommendedPool(pool);
+        setIsLoadingRecommendations(false);
+      }
     });
     return () => {
       cancelled = true;
