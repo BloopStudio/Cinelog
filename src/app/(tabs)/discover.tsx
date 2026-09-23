@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Text, View, useWindowDimensions } from "react-native";
+import { FlatList, RefreshControl, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -47,10 +47,26 @@ function pickRecommendationSources(items: WatchlistItem[]): WatchlistItem[] {
   return rated.slice(0, count);
 }
 
+async function loadRecommendationPool(sourceItems: WatchlistItem[]): Promise<TMDBSearchResult[]> {
+  if (sourceItems.length === 0) return [];
+  const lists = await Promise.all(
+    sourceItems.map((item) => getRecommendations(item.mediaType, item.id).catch(() => []))
+  );
+  const seen = new Set<string>();
+  const combined = lists.flat().filter((rec) => {
+    const key = `${rec.media_type}-${rec.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return shuffle(combined);
+}
+
 export default function DiscoverScreen() {
   const { items } = useWatchlist();
   const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [recommendedPool, setRecommendedPool] = useState<TMDBSearchResult[]>([]);
   const { width } = useWindowDimensions();
 
@@ -72,29 +88,33 @@ export default function DiscoverScreen() {
   const sourceKey = sourceItems.map((item) => `${item.mediaType}-${item.id}`).join(",");
 
   useEffect(() => {
-    if (sourceItems.length === 0) {
-      setRecommendedPool([]);
-      return;
-    }
     let cancelled = false;
-    Promise.all(
-      sourceItems.map((item) => getRecommendations(item.mediaType, item.id).catch(() => []))
-    ).then((lists) => {
-      if (cancelled) return;
-      const seen = new Set<string>();
-      const combined = lists.flat().filter((rec) => {
-        const key = `${rec.media_type}-${rec.id}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      setRecommendedPool(shuffle(combined));
+    loadRecommendationPool(sourceItems).then((pool) => {
+      if (!cancelled) setRecommendedPool(pool);
     });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceKey]);
+
+  // Pull-to-refresh re-fetches both shelves — trending gets a fresh shuffled
+  // page, recommendations get a fresh pool for the same source titles
+  // (getRecommendations/shuffle differ run to run even with sourceKey
+  // unchanged), instead of only reacting to the watchlist changing.
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const [nextTrending, nextPool] = await Promise.all([
+        getTrending().catch(() => trending),
+        loadRecommendationPool(sourceItems),
+      ]);
+      setTrending(nextTrending);
+      setRecommendedPool(nextPool);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const discoverItems = useMemo(() => {
     const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
@@ -151,6 +171,14 @@ export default function DiscoverScreen() {
           removeClippedSubviews={false}
           contentContainerStyle={{ padding: SCREEN_PADDING }}
           columnWrapperStyle={{ gap: TILE_GAP, marginBottom: 16 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor="#E63946"
+              colors={["#E63946"]}
+            />
+          }
           ListHeaderComponent={
             recommended.length > 0 ? (
               <View className="mb-6">
