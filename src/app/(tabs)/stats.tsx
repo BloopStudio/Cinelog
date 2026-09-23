@@ -4,6 +4,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import { RatingRing } from "@/components/RatingRing";
 import { useWatchlist } from "@/context/WatchlistContext";
 import { estimateRuntimeMinutes, getDetails } from "@/services/tmdb";
 
@@ -38,6 +39,20 @@ function StatTile({ label, value }: { label: string; value: string }) {
         {value}
       </Text>
       <Text className="mt-1 text-xs text-text-secondary">{label}</Text>
+    </View>
+  );
+}
+
+function RatingTile({ averageRating }: { averageRating: string | null }) {
+  return (
+    <View className="flex-1 flex-row items-center gap-3 rounded-2xl bg-surface p-4">
+      <RatingRing rating={averageRating ? parseFloat(averageRating) : null} />
+      <View className="shrink">
+        <Text numberOfLines={1} className="text-xl font-bold text-text-primary">
+          {averageRating ? `${averageRating}★` : "—"}
+        </Text>
+        <Text className="mt-1 text-xs text-text-secondary">note moyenne</Text>
+      </View>
     </View>
   );
 }
@@ -118,7 +133,7 @@ export default function StatsScreen() {
             <StatTile label="temps estimé" value={totalHours > 0 ? `${totalHours}h` : "—"} />
           </View>
           <View className="flex-row gap-3">
-            <StatTile label="note moyenne" value={averageRating ? `${averageRating}★` : "—"} />
+            <RatingTile averageRating={averageRating} />
             <StatTile label="genre préféré" value={topGenre ?? "—"} />
           </View>
         </View>
