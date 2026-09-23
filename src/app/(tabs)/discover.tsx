@@ -121,13 +121,20 @@ export default function DiscoverScreen() {
       </View>
 
       {isLoading ? (
-        <View
-          className="flex-row flex-wrap"
-          style={{ padding: SCREEN_PADDING, gap: TILE_GAP }}
-        >
-          {Array.from({ length: numColumns * 3 }, (_, i) => (
-            <SkeletonPosterTile key={i} width={tileWidth} />
-          ))}
+        <View style={{ padding: SCREEN_PADDING }}>
+          {chunk(Array.from({ length: numColumns * 3 }, (_, i) => i), numColumns).map(
+            (row, rowIndex) => (
+              <View
+                key={rowIndex}
+                className="flex-row"
+                style={{ gap: TILE_GAP, marginBottom: 16 }}
+              >
+                {row.map((i) => (
+                  <SkeletonPosterTile key={i} width={tileWidth} />
+                ))}
+              </View>
+            )
+          )}
         </View>
       ) : discoverItems.length === 0 && recommended.length === 0 ? (
         <EmptyState
