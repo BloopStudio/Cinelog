@@ -141,6 +141,16 @@ export function estimateRuntimeMinutes(
   return details.number_of_episodes * perEpisode;
 }
 
+// The other films in a movie's franchise (e.g. Divergente 2, Divergente 3
+// for Divergente) — TMDB groups these as a "collection". TV shows don't
+// have this concept, they have seasons instead.
+export async function getCollectionMovies(collectionId: number): Promise<TMDBSearchResult[]> {
+  const data = await tmdbFetch<{ parts: TMDBSearchResult[] }>(`/collection/${collectionId}`);
+  return data.parts
+    .map((part) => ({ ...part, media_type: "movie" as const }))
+    .sort((a, b) => (a.release_date ?? "").localeCompare(b.release_date ?? ""));
+}
+
 export function shuffle<T>(items: T[]): T[] {
   const shuffled = [...items];
   for (let i = shuffled.length - 1; i > 0; i--) {

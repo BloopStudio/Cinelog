@@ -53,6 +53,9 @@ export interface TMDBDetails extends TMDBSearchResult {
   tagline: string;
   credits?: { cast: CastMember[] };
   "watch/providers"?: { results: Record<string, WatchProviderRegion> };
+  // Movies only — TMDB groups a franchise's films (e.g. Divergente 1-4)
+  // under one collection; TV shows don't have this, they have seasons.
+  belongs_to_collection?: { id: number; name: string; poster_path: string | null } | null;
 }
 
 export interface WatchlistItem {

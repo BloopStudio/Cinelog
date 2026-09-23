@@ -16,6 +16,7 @@ import {
 import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PosterTile } from "@/components/PosterTile";
 import { PressScale } from "@/components/PressScale";
 import { RatingStars } from "@/components/RatingStars";
 import { posterTransition } from "@/constants/sharedTransitions";
@@ -23,13 +24,14 @@ import { STATUS_LABELS, STATUS_ORDER } from "@/constants/status";
 import { useWatchlist } from "@/context/WatchlistContext";
 import {
   estimateRuntimeMinutes,
+  getCollectionMovies,
   getDetails,
   getReleaseDateFloor,
   posterUrl,
   providerLogoUrl,
   WATCH_PROVIDER_REGION,
 } from "@/services/tmdb";
-import type { MediaType, TMDBDetails, WatchStatus } from "@/types";
+import type { MediaType, TMDBDetails, TMDBSearchResult, WatchStatus } from "@/types";
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
@@ -51,6 +53,7 @@ export default function DetailsScreen() {
   const [details, setDetails] = useState<TMDBDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [collectionMovies, setCollectionMovies] = useState<TMDBSearchResult[]>([]);
   const [isDateModalVisible, setIsDateModalVisible] = useState(false);
   const [draftDate, setDraftDate] = useState(() => new Date());
 
@@ -108,6 +111,25 @@ export default function DetailsScreen() {
       cancelled = true;
     };
   }, [mediaType, id]);
+
+  const collectionId = details?.belongs_to_collection?.id;
+  useEffect(() => {
+    if (!collectionId) {
+      setCollectionMovies([]);
+      return;
+    }
+    let cancelled = false;
+    getCollectionMovies(collectionId)
+      .then((movies) => {
+        if (!cancelled) setCollectionMovies(movies);
+      })
+      .catch(() => {
+        if (!cancelled) setCollectionMovies([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [collectionId]);
 
   const title = details?.title ?? details?.name ?? "";
   const year = (details?.release_date ?? details?.first_air_date ?? "").slice(0, 4);
@@ -370,6 +392,34 @@ export default function DetailsScreen() {
                       {actor.character}
                     </Text>
                   </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          {collectionMovies.length > 1 ? (
+            <View className="mt-5">
+              <Text className="mb-2 text-sm font-semibold text-text-secondary">
+                {details.belongs_to_collection?.name ?? "Cette saga"}
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="-mx-5"
+                contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+              >
+                {collectionMovies.map((movie) => (
+                  <PosterTile
+                    key={movie.id}
+                    title={movie.title ?? "Sans titre"}
+                    posterPath={movie.poster_path}
+                    subtitle={movie.release_date?.slice(0, 4)}
+                    onPress={() => router.push(`/details/movie/${movie.id}`)}
+                    width={92}
+                    transitionTag={
+                      movie.id === id ? undefined : `poster-movie-${movie.id}`
+                    }
+                  />
                 ))}
               </ScrollView>
             </View>
