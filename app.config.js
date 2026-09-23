@@ -44,7 +44,25 @@ module.exports = {
           imageWidth: 120,
         },
       ],
-      "@react-native-community/datetimepicker",
+      [
+        "@react-native-community/datetimepicker",
+        {
+          // Sans ça, le sélecteur de date Android garde le thème clair par
+          // défaut d'Android (fond blanc, accents bleus) au lieu de reprendre
+          // les couleurs de l'app — d'où l'effet "pas beau"/hors charte.
+          android: {
+            datePicker: {
+              colorAccent: { light: "#E63946" },
+              colorControlActivated: { light: "#E63946" },
+              colorControlHighlight: { light: "#33E63946" },
+              textColor: { light: "#F5F7FA" },
+              textColorPrimary: { light: "#F5F7FA" },
+              textColorSecondary: { light: "#9AA5B1" },
+              windowBackground: { light: "#151B23" },
+            },
+          },
+        },
+      ],
       "./plugins/withAndroidReleaseSigning.js",
     ],
     experiments: {

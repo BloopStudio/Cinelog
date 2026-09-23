@@ -71,8 +71,11 @@ export default function DetailsScreen() {
       DateTimePickerAndroid.open({
         value,
         mode: "date",
+        display: "calendar",
         minimumDate: floor ?? undefined,
         maximumDate: new Date(),
+        positiveButton: { label: "Valider", textColor: "#E63946" },
+        negativeButton: { label: "Annuler", textColor: "#9AA5B1" },
         onValueChange: (_event, date) => {
           void commitWatchedDate(date);
         },
