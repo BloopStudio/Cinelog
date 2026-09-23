@@ -15,7 +15,12 @@ function GenreBar({ genre, count, pct }: { genre: string; count: number; pct: nu
     progress.value = withTiming(pct, { duration: 600, easing: Easing.out(Easing.cubic) });
   }, [pct, progress]);
 
-  const animatedStyle = useAnimatedStyle(() => ({ width: `${progress.value}%` }));
+  // scaleX instead of animating width: width/height changes force a native
+  // layout pass every frame, transform is compositor-only — same visual
+  // result, no layout thrashing across 8 bars animating at once.
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: progress.value / 100 }],
+  }));
 
   return (
     <View className="flex-row items-center gap-3">
@@ -23,7 +28,10 @@ function GenreBar({ genre, count, pct }: { genre: string; count: number; pct: nu
         {genre}
       </Text>
       <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-alt">
-        <Animated.View className="h-full rounded-full bg-primary" style={animatedStyle} />
+        <Animated.View
+          className="h-full w-full rounded-full bg-primary"
+          style={[{ transformOrigin: "left" }, animatedStyle]}
+        />
       </View>
       <Text numberOfLines={1} className="w-8 text-right text-xs text-text-secondary">
         {count}

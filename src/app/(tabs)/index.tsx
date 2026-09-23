@@ -58,6 +58,11 @@ function FilterChips({ filter, onChange }: { filter: Filter; onChange: (value: F
     height.value = withTiming(rect.height, { duration: 220 });
   }, [filter, left, top, width, height]);
 
+  // Deliberately left/top/width/height, not transform: this indicator has
+  // to render as an actual rounded rectangle matching each chip's real
+  // size (border-radius reads the laid-out box), and translate+scale of a
+  // placeholder box produces an ellipse instead once scaled non-uniformly.
+  // A single view re-laying-out on an occasional tap is cheap regardless.
   const indicatorStyle = useAnimatedStyle(() => ({
     position: "absolute",
     left: left.value,
