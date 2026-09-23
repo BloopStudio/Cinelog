@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
 import { MovieCard } from "@/components/MovieCard";
 import { PersonCard } from "@/components/PersonCard";
+import { SkeletonMovieCard } from "@/components/Skeleton";
 import { useWatchlist } from "@/context/WatchlistContext";
 import { searchMulti } from "@/services/tmdb";
 import type { SearchResult } from "@/types";
@@ -92,8 +93,10 @@ export default function SearchScreen() {
       </View>
 
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#E63946" />
+        <View className="px-4">
+          {Array.from({ length: 5 }, (_, i) => (
+            <SkeletonMovieCard key={i} />
+          ))}
         </View>
       ) : error ? (
         <EmptyState icon="alert-circle-outline" title="Oups" message={error} />

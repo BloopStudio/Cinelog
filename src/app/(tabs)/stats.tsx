@@ -1,10 +1,35 @@
 import { useEffect, useMemo, useRef } from "react";
 import { ScrollView, Text, View } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { useWatchlist } from "@/context/WatchlistContext";
 import { estimateRuntimeMinutes, getDetails } from "@/services/tmdb";
+
+function GenreBar({ genre, count, pct }: { genre: string; count: number; pct: number }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withTiming(pct, { duration: 600, easing: Easing.out(Easing.cubic) });
+  }, [pct, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ width: `${progress.value}%` }));
+
+  return (
+    <View className="flex-row items-center gap-3">
+      <Text numberOfLines={1} className="w-24 text-xs text-text-secondary">
+        {genre}
+      </Text>
+      <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-alt">
+        <Animated.View className="h-full rounded-full bg-primary" style={animatedStyle} />
+      </View>
+      <Text numberOfLines={1} className="w-8 text-right text-xs text-text-secondary">
+        {count}
+      </Text>
+    </View>
+  );
+}
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
@@ -105,23 +130,12 @@ export default function StatsScreen() {
             </Text>
             <View className="gap-2.5">
               {genreCounts.slice(0, 8).map(([genre, count]) => (
-                <View key={genre} className="flex-row items-center gap-3">
-                  <Text numberOfLines={1} className="w-24 text-xs text-text-secondary">
-                    {genre}
-                  </Text>
-                  <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-alt">
-                    <View
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${Math.max(6, (count / maxGenreCount) * 100)}%` }}
-                    />
-                  </View>
-                  <Text
-                    numberOfLines={1}
-                    className="w-8 text-right text-xs text-text-secondary"
-                  >
-                    {count}
-                  </Text>
-                </View>
+                <GenreBar
+                  key={genre}
+                  genre={genre}
+                  count={count}
+                  pct={Math.max(6, (count / maxGenreCount) * 100)}
+                />
               ))}
             </View>
           </View>

@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
+
+import { PressScale } from "@/components/PressScale";
 
 interface RatingStarsProps {
   rating: number;
@@ -28,13 +30,14 @@ export function RatingStars({ rating, onChange, size = 22 }: RatingStarsProps) {
         if (!onChange) return star;
 
         return (
-          <Pressable
+          <PressScale
             key={value}
             hitSlop={6}
+            scaleTo={0.8}
             onPress={() => onChange(value === rating ? 0 : value)}
           >
             {star}
-          </Pressable>
+          </PressScale>
         );
       })}
     </View>

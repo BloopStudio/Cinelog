@@ -1,10 +1,11 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Text, View, useWindowDimensions } from "react-native";
+import { FlatList, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { PosterTile } from "@/components/PosterTile";
+import { SkeletonPosterTile } from "@/components/Skeleton";
 import { useWatchlist } from "@/context/WatchlistContext";
 import { getRecommendations, getTrending, shuffle } from "@/services/tmdb";
 import type { TMDBSearchResult, WatchlistItem } from "@/types";
@@ -120,8 +121,13 @@ export default function DiscoverScreen() {
       </View>
 
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#E63946" />
+        <View
+          className="flex-row flex-wrap"
+          style={{ padding: SCREEN_PADDING, gap: TILE_GAP }}
+        >
+          {Array.from({ length: numColumns * 3 }, (_, i) => (
+            <SkeletonPosterTile key={i} width={tileWidth} />
+          ))}
         </View>
       ) : discoverItems.length === 0 && recommended.length === 0 ? (
         <EmptyState

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PressScale } from "@/components/PressScale";
 import { RatingStars } from "@/components/RatingStars";
 import { STATUS_LABELS, STATUS_ORDER } from "@/constants/status";
 import { useWatchlist } from "@/context/WatchlistContext";
@@ -227,7 +228,7 @@ export default function DetailsScreen() {
               {STATUS_ORDER.map((status) => {
                 const active = listItem?.status === status;
                 return (
-                  <Pressable
+                  <PressScale
                     key={status}
                     onPress={() => handleStatusPress(status)}
                     className={`flex-1 items-center rounded-xl py-2.5 ${
@@ -241,7 +242,7 @@ export default function DetailsScreen() {
                     >
                       {STATUS_LABELS[status]}
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 );
               })}
             </View>
@@ -270,7 +271,7 @@ export default function DetailsScreen() {
                   (season) => {
                     const active = listItem?.currentSeason === season;
                     return (
-                      <Pressable
+                      <PressScale
                         key={season}
                         onPress={() => handleSeasonChange(season)}
                         className={`rounded-full px-3.5 py-2 ${
@@ -284,7 +285,7 @@ export default function DetailsScreen() {
                         >
                           Saison {season}
                         </Text>
-                      </Pressable>
+                      </PressScale>
                     );
                   }
                 )}
