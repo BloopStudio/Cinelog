@@ -19,6 +19,8 @@ export default function TabsLayout() {
           borderTopRightRadius: 24,
           height: 66,
           paddingTop: 10,
+          elevation: 0,
+          shadowOpacity: 0,
         },
       }}
     >
