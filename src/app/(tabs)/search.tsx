@@ -4,11 +4,20 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   Text,
   TextInput,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  ZoomIn,
+  ZoomOut,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -28,6 +37,17 @@ export default function SearchScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  const focusProgress = useSharedValue(0);
+  useEffect(() => {
+    focusProgress.value = withTiming(isFocused ? 1 : 0, { duration: 200 });
+  }, [isFocused, focusProgress]);
+
+  const barStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(focusProgress.value, [0, 1], ["transparent", "#E63946"]),
+    backgroundColor: interpolateColor(focusProgress.value, [0, 1], ["#151B23", "#0B0F14"]),
+  }));
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -80,18 +100,30 @@ export default function SearchScreen() {
         <Text className="text-2xl font-bold text-text-primary">Recherche</Text>
       </View>
 
-      <View className="mx-4 mb-3 flex-row items-center gap-2 rounded-xl bg-surface px-3 py-2.5">
+      <Animated.View
+        style={barStyle}
+        className="mx-4 mb-3 flex-row items-center gap-2 rounded-full border-[1.5px] px-4 py-2.5"
+      >
         <Ionicons name="search" size={18} color="#9AA5B1" />
         <TextInput
           value={query}
           onChangeText={setQuery}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder="Titre, film, série ou acteur..."
           placeholderTextColor="#9AA5B1"
           autoCapitalize="none"
           autoCorrect={false}
           className="flex-1 text-base text-text-primary"
         />
-      </View>
+        {query.length > 0 && (
+          <Animated.View entering={ZoomIn.duration(150)} exiting={ZoomOut.duration(150)}>
+            <Pressable onPress={() => setQuery("")} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color="#9AA5B1" />
+            </Pressable>
+          </Animated.View>
+        )}
+      </Animated.View>
 
       {isLoading ? (
         <View className="px-4">
