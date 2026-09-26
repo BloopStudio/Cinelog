@@ -15,13 +15,14 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: "#0B0F14" },
         tabBarStyle: {
           backgroundColor: "#151B23",
-          borderTopColor: "#2A323D",
+          borderTopWidth: 0,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           height: 66,
           paddingTop: 10,
           elevation: 0,
           shadowOpacity: 0,
+          overflow: "hidden",
         },
       }}
     >
