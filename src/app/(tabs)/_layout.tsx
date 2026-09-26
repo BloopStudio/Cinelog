@@ -11,7 +11,8 @@ export default function TabsLayout() {
         tabBarActiveTintColor: "#E63946",
         tabBarInactiveTintColor: "#9AA5B1",
         tabBarButton: (props) => <AppTabButton {...props} />,
-        tabBarLabelStyle: { fontSize: 10.5, fontWeight: "600" },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
+        sceneStyle: { backgroundColor: "#0B0F14" },
         tabBarStyle: {
           backgroundColor: "#151B23",
           borderTopColor: "#2A323D",

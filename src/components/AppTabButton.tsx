@@ -23,7 +23,7 @@ export function AppTabButton({
       style={[style, { alignItems: "center", justifyContent: "center" }]}
       {...rest}
     >
-      <View className={focused ? "rounded-2xl bg-primary/15 px-4 py-1" : "px-4 py-1"}>
+      <View className={`rounded-2xl px-1 py-0.5 ${focused ? "bg-primary/15" : ""}`}>
         {children}
       </View>
     </PressScale>
