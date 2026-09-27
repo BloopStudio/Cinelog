@@ -1,15 +1,8 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  Share,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Pressable, Share, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { FilmstripLoader } from "@/components/FilmstripLoader";
 import { useWatchlist } from "@/context/WatchlistContext";
 
 const SYNC_LABELS: Record<string, string> = {
@@ -116,7 +109,7 @@ export default function ShareScreen() {
                 className="items-center rounded-full bg-primary py-3 disabled:opacity-60"
               >
                 {isCreating ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <FilmstripLoader color="#FFFFFF" size={18} />
                 ) : (
                   <Text className="text-sm font-semibold text-white">Créer un code</Text>
                 )}
@@ -146,7 +139,7 @@ export default function ShareScreen() {
                 className="items-center rounded-full border border-accent py-3 disabled:opacity-60"
               >
                 {isJoining ? (
-                  <ActivityIndicator color="#E63946" />
+                  <FilmstripLoader color="#E63946" size={18} />
                 ) : (
                   <Text className="text-sm font-semibold text-accent">Rejoindre</Text>
                 )}

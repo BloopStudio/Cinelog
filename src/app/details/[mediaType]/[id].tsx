@@ -3,19 +3,11 @@ import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/d
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Linking,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Linking, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { FilmstripLoader } from "@/components/FilmstripLoader";
 import { PosterTile } from "@/components/PosterTile";
 import { PressScale } from "@/components/PressScale";
 import { RatingStars } from "@/components/RatingStars";
@@ -198,7 +190,7 @@ export default function DetailsScreen() {
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator color="#E63946" />
+        <FilmstripLoader color="#E63946" size={36} />
       </View>
     );
   }

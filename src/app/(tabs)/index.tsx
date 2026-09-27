@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   type LayoutChangeEvent,
   Pressable,
@@ -14,6 +13,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import { FilmstripLoader } from "@/components/FilmstripLoader";
 import { MovieCard } from "@/components/MovieCard";
 import { STATUS_LABELS } from "@/constants/status";
 import { useWatchlist } from "@/context/WatchlistContext";
@@ -254,7 +254,7 @@ export default function WatchlistScreen() {
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#E63946" />
+          <FilmstripLoader color="#E63946" size={36} />
         </View>
       ) : filteredItems.length === 0 ? (
         <EmptyState

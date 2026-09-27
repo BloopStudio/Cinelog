@@ -1,10 +1,11 @@
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import { FlatList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import { FilmstripLoader } from "@/components/FilmstripLoader";
 import { MovieCard } from "@/components/MovieCard";
 import { useWatchlist } from "@/context/WatchlistContext";
 import { getPerson, getPersonCredits, posterUrl } from "@/services/tmdb";
@@ -59,7 +60,7 @@ export default function ActorScreen() {
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#E63946" />
+          <FilmstripLoader color="#E63946" size={36} />
         </View>
       ) : error || credits.length === 0 ? (
         <EmptyState
