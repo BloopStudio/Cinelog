@@ -13,6 +13,7 @@ import { PressScale } from "@/components/PressScale";
 import { RatingStars } from "@/components/RatingStars";
 import { posterTransition } from "@/constants/sharedTransitions";
 import { STATUS_LABELS, STATUS_ORDER } from "@/constants/status";
+import { useToast } from "@/context/ToastContext";
 import { useWatchlist } from "@/context/WatchlistContext";
 import {
   estimateRuntimeMinutes,
@@ -42,6 +43,7 @@ export default function DetailsScreen() {
 
   const { getItem, upsertItem, removeItem, setStatus, setRating, setCurrentSeason, setWatchedAt } =
     useWatchlist();
+  const { showToast } = useToast();
   const [details, setDetails] = useState<TMDBDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +145,7 @@ export default function DetailsScreen() {
         genres: details.genres?.map((genre) => genre.name) ?? [],
         runtimeMinutes: estimateRuntimeMinutes(details, mediaType),
       });
+      showToast("Ajouté à ta liste");
     }
   };
 
@@ -421,6 +424,7 @@ export default function DetailsScreen() {
             <Pressable
               onPress={async () => {
                 await removeItem(mediaType, id);
+                showToast("Retiré de ta liste");
                 router.back();
               }}
               className="mb-8 mt-6 flex-row items-center justify-center gap-2 rounded-xl bg-surface py-3"

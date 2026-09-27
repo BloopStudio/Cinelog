@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { FilmstripLoader } from "@/components/FilmstripLoader";
 import { MovieCard } from "@/components/MovieCard";
 import { STATUS_LABELS } from "@/constants/status";
+import { useToast } from "@/context/ToastContext";
 import { useWatchlist } from "@/context/WatchlistContext";
 import type { MediaType, WatchStatus } from "@/types";
 
@@ -112,6 +113,7 @@ function FilterChips({ filter, onChange }: { filter: Filter; onChange: (value: F
 
 export default function WatchlistScreen() {
   const { items, isLoading, removeItem } = useWatchlist();
+  const { showToast } = useToast();
   const [filter, setFilter] = useState<Filter>("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const [genreFilter, setGenreFilter] = useState<string | "all">("all");
@@ -278,7 +280,10 @@ export default function WatchlistScreen() {
               onPress={() =>
                 router.push(`/details/${item.mediaType}/${item.id}`)
               }
-              onRemove={() => removeItem(item.mediaType, item.id)}
+              onRemove={() => {
+                removeItem(item.mediaType, item.id);
+                showToast("Retiré de ta liste");
+              }}
               transitionTag={`poster-${item.mediaType}-${item.id}`}
             />
           )}

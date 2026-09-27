@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { ToastProvider } from "@/context/ToastContext";
 import { WatchlistProvider } from "@/context/WatchlistContext";
 
 export default function RootLayout() {
@@ -12,32 +13,34 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <WatchlistProvider>
-          <StatusBar style="light" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen
-              name="details/[mediaType]/[id]"
-              options={{ headerShown: true, headerTitle: "", headerTransparent: true }}
-            />
-            <Stack.Screen
-              name="actor/[id]"
-              options={{
-                headerShown: true,
-                headerTitle: "",
-                headerStyle: { backgroundColor: "#0B0F14" },
-                headerTintColor: "#F5F7FA",
-              }}
-            />
-            <Stack.Screen
-              name="share"
-              options={{
-                headerShown: true,
-                headerTitle: "",
-                headerStyle: { backgroundColor: "#0B0F14" },
-                headerTintColor: "#F5F7FA",
-              }}
-            />
-          </Stack>
+          <ToastProvider>
+            <StatusBar style="light" />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="details/[mediaType]/[id]"
+                options={{ headerShown: true, headerTitle: "", headerTransparent: true }}
+              />
+              <Stack.Screen
+                name="actor/[id]"
+                options={{
+                  headerShown: true,
+                  headerTitle: "",
+                  headerStyle: { backgroundColor: "#0B0F14" },
+                  headerTintColor: "#F5F7FA",
+                }}
+              />
+              <Stack.Screen
+                name="share"
+                options={{
+                  headerShown: true,
+                  headerTitle: "",
+                  headerStyle: { backgroundColor: "#0B0F14" },
+                  headerTintColor: "#F5F7FA",
+                }}
+              />
+            </Stack>
+          </ToastProvider>
         </WatchlistProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { MovieCard } from "@/components/MovieCard";
+import { useToast } from "@/context/ToastContext";
 import { useWatchlist } from "@/context/WatchlistContext";
 import type { WatchlistItem } from "@/types";
 
@@ -21,6 +22,7 @@ function monthLabel(date: Date): string {
 
 export default function JournalScreen() {
   const { items, removeItem } = useWatchlist();
+  const { showToast } = useToast();
 
   const rows = useMemo<Row[]>(() => {
     const watched = [...items]
@@ -77,7 +79,10 @@ export default function JournalScreen() {
                 status={row.item.status}
                 rating={row.item.rating}
                 onPress={() => router.push(`/details/${row.item.mediaType}/${row.item.id}`)}
-                onRemove={() => removeItem(row.item.mediaType, row.item.id)}
+                onRemove={() => {
+                  removeItem(row.item.mediaType, row.item.id);
+                  showToast("Retiré de ta liste");
+                }}
               />
             )
           }
