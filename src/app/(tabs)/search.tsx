@@ -1,14 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import Animated, {
   FadeInDown,
   interpolateColor,
@@ -21,12 +14,13 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import { FilmstripLoader } from "@/components/FilmstripLoader";
 import { MovieCard } from "@/components/MovieCard";
 import { PersonCard } from "@/components/PersonCard";
 import { SkeletonMovieCard } from "@/components/Skeleton";
 import { useWatchlist } from "@/context/WatchlistContext";
-import { searchMulti } from "@/services/tmdb";
-import type { SearchResult } from "@/types";
+import { getTrending, searchMulti } from "@/services/tmdb";
+import type { SearchResult, TMDBSearchResult } from "@/types";
 
 export default function SearchScreen() {
   const { getItem } = useWatchlist();
@@ -38,6 +32,15 @@ export default function SearchScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState<TMDBSearchResult[]>([]);
+
+  useEffect(() => {
+    getTrending()
+      .then((data) => setSuggestions(data.slice(0, 6)))
+      .catch(() => {
+        // silencieux : la recherche reste utilisable sans suggestions
+      });
+  }, []);
 
   const focusProgress = useSharedValue(0);
   useEffect(() => {
@@ -134,15 +137,43 @@ export default function SearchScreen() {
       ) : error ? (
         <EmptyState icon="alert-circle-outline" title="Oups" message={error} />
       ) : results.length === 0 ? (
-        <EmptyState
-          icon="search-outline"
-          title={query.trim() ? "Aucun résultat" : "Cherche un titre"}
-          message={
-            query.trim()
-              ? "Essaie un autre titre."
-              : "Tape le nom d'un film ou d'une série pour commencer."
-          }
-        />
+        query.trim() ? (
+          <EmptyState icon="search-outline" title="Aucun résultat" message="Essaie un autre titre." />
+        ) : (
+          <View className="flex-1 items-center justify-center px-10">
+            <Ionicons name="search-outline" size={48} color="#4A5568" />
+            <Text className="mt-4 text-center text-lg font-semibold text-text-primary">
+              Cherche un titre
+            </Text>
+            <Text className="mt-2 text-center text-sm text-text-secondary">
+              {"Tape le nom d'un film ou d'une série pour commencer."}
+            </Text>
+            {suggestions.length > 0 && (
+              <View className="mt-6 w-full">
+                <Text className="mb-2 text-center text-xs font-semibold text-text-secondary">
+                  Suggestions
+                </Text>
+                <View className="flex-row flex-wrap justify-center gap-2">
+                  {suggestions.map((item, index) => (
+                    <Animated.View
+                      key={`${item.media_type}-${item.id}`}
+                      entering={FadeInDown.delay(index * 60).duration(250)}
+                    >
+                      <Pressable
+                        onPress={() => setQuery(item.title ?? item.name ?? "")}
+                        className="rounded-full border border-border bg-surface px-3.5 py-2"
+                      >
+                        <Text className="text-xs font-semibold text-text-secondary">
+                          {item.title ?? item.name}
+                        </Text>
+                      </Pressable>
+                    </Animated.View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        )
       ) : (
         <FlatList
           data={results}
@@ -153,8 +184,8 @@ export default function SearchScreen() {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             isLoadingMore ? (
-              <View className="py-4">
-                <ActivityIndicator color="#E63946" />
+              <View className="items-center py-4">
+                <FilmstripLoader color="#E63946" size={20} />
               </View>
             ) : null
           }
