@@ -1,9 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router/js-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppTabButton } from "@/components/AppTabButton";
 
+// Fixed content budget above the system nav area — the bar's total height
+// is this plus the device's own bottom inset, so it fits icon+label the
+// same everywhere instead of being squeezed (or overlapped) on phones with
+// a tall 3-button nav bar instead of a slim gesture one.
+const TAB_BAR_CONTENT_HEIGHT = 56;
+
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -16,8 +25,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: "#151B23",
           borderTopWidth: 0,
-          height: 66,
+          height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
           paddingTop: 10,
+          paddingBottom: insets.bottom,
           elevation: 0,
           shadowOpacity: 0,
         },

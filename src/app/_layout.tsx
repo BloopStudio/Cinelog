@@ -2,6 +2,8 @@ import "@/global.css";
 
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -9,6 +11,14 @@ import { ToastProvider } from "@/context/ToastContext";
 import { WatchlistProvider } from "@/context/WatchlistContext";
 
 export default function RootLayout() {
+  useEffect(() => {
+    // The Android nav bar is configured transparent (Expo's default), so
+    // any screen area we don't explicitly paint dark shows this native
+    // window background straight through — white by default. Setting it
+    // once here means a layout gap is always dark, never a white flash.
+    SystemUI.setBackgroundColorAsync("#0B0F14");
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
