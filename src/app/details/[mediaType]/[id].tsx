@@ -235,6 +235,7 @@ export default function DetailsScreen() {
             {details.number_of_seasons
               ? ` · ${details.number_of_seasons} saison(s)`
               : ""}
+            {details.number_of_episodes ? ` · ${details.number_of_episodes} épisodes` : ""}
           </Text>
 
           {details.genres?.length ? (
@@ -296,6 +297,9 @@ export default function DetailsScreen() {
                 {Array.from({ length: details.number_of_seasons }, (_, i) => i + 1).map(
                   (season) => {
                     const active = listItem?.currentSeason === season;
+                    const episodeCount = details.seasons?.find(
+                      (s) => s.season_number === season
+                    )?.episode_count;
                     return (
                       <PressScale
                         key={season}
@@ -310,6 +314,7 @@ export default function DetailsScreen() {
                           }`}
                         >
                           Saison {season}
+                          {episodeCount ? ` · ${episodeCount} ép.` : ""}
                         </Text>
                       </PressScale>
                     );

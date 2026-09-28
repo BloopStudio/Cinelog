@@ -50,6 +50,7 @@ export interface TMDBDetails extends TMDBSearchResult {
   number_of_seasons?: number;
   number_of_episodes?: number;
   episode_run_time?: number[];
+  seasons?: { season_number: number; episode_count: number; name: string }[];
   tagline: string;
   credits?: { cast: CastMember[] };
   "watch/providers"?: { results: Record<string, WatchProviderRegion> };
