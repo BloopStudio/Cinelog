@@ -64,6 +64,7 @@ module.exports = {
         },
       ],
       "./plugins/withAndroidReleaseSigning.js",
+      "./plugins/withAndroidBackupRules.js",
     ],
     experiments: {
       typedRoutes: true,
