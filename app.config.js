@@ -65,6 +65,7 @@ module.exports = {
       ],
       "./plugins/withAndroidReleaseSigning.js",
       "./plugins/withAndroidBackupRules.js",
+      "./plugins/withoutDeprecatedSystemBarColors.js",
     ],
     experiments: {
       typedRoutes: true,
