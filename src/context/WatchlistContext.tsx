@@ -25,7 +25,7 @@ import {
 import { getDetails, getReleaseDateFloor } from "@/services/tmdb";
 import type { MediaType, WatchlistItem, WatchStatus } from "@/types";
 
-export type SyncState = "solo" | "connecting" | "synced" | "error";
+export type SyncState = "solo" | "connecting" | "synced" | "unavailable" | "error";
 
 interface WatchlistContextValue {
   items: WatchlistItem[];
@@ -96,7 +96,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             setItems(remoteItems);
             setSyncState("synced");
           },
-          () => setSyncState("error")
+          // "permission-denied" here means the security rules refused the
+          // read — in practice because this list (or this device's
+          // membership in it) no longer exists server-side, not a transient
+          // network issue. Surfaced separately so the UI can say exactly
+          // that instead of a generic "connection error" the user can't
+          // act on.
+          (error) => setSyncState(error.code === "permission-denied" ? "unavailable" : "error")
         );
       })
       .catch(() => setSyncState("error"));

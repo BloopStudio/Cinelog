@@ -9,6 +9,7 @@ import {
   setDoc,
   updateDoc,
   writeBatch,
+  type FirestoreError,
   type Unsubscribe,
 } from "firebase/firestore";
 
@@ -124,7 +125,7 @@ export async function leaveSharedList(listId: string): Promise<void> {
 export function subscribeToSharedList(
   listId: string,
   onItems: (items: WatchlistItem[]) => void,
-  onError: (error: Error) => void
+  onError: (error: FirestoreError) => void
 ): Unsubscribe {
   return onSnapshot(
     collection(getFirebaseDb(), "lists", listId, "items"),

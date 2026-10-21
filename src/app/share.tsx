@@ -8,6 +8,7 @@ import { useWatchlist } from "@/context/WatchlistContext";
 const SYNC_LABELS: Record<string, string> = {
   connecting: "Connexion...",
   synced: "Synchronisée",
+  unavailable: "Liste introuvable",
   error: "Erreur de connexion",
 };
 
@@ -77,18 +78,33 @@ export default function ShareScreen() {
               </Text>
             </View>
 
+            {syncState === "unavailable" ? (
+              <Text className="text-sm text-primary">
+                {
+                  "Cette liste partagée n'existe plus (supprimée, ou tu n'y as plus accès). Quitte-la pour revenir à ta liste locale sur cet appareil."
+                }
+              </Text>
+            ) : null}
+
             <Pressable
               onPress={() => Share.share({ message: sharedListId })}
-              className="items-center rounded-full bg-primary py-3"
+              disabled={syncState === "unavailable"}
+              className="items-center rounded-full bg-primary py-3 disabled:opacity-40"
             >
               <Text className="text-sm font-semibold text-white">Partager le code</Text>
             </Pressable>
 
             <Pressable
               onPress={handleLeave}
-              className="items-center rounded-full border border-border py-3"
+              className={`items-center rounded-full border py-3 ${
+                syncState === "unavailable" ? "border-primary" : "border-border"
+              }`}
             >
-              <Text className="text-sm font-semibold text-text-secondary">
+              <Text
+                className={`text-sm font-semibold ${
+                  syncState === "unavailable" ? "text-primary" : "text-text-secondary"
+                }`}
+              >
                 Quitter la liste partagée
               </Text>
             </Pressable>
