@@ -106,6 +106,12 @@ jobs:
           printf 'org.gradle.workers.max=4\n' >> android/gradle.properties
           printf 'org.gradle.configureondemand=true\n' >> android/gradle.properties
           printf 'org.gradle.jvmargs=-Xmx4608m -XX:MaxMetaspaceSize=1024m\n' >> android/gradle.properties
+          # R8 code shrinking/obfuscation was off (the React Native
+          # template's own default) — Play Console flags that as
+          # "optimisation du code DEX" below threshold. Both default to
+          # false upstream, so this needs setting explicitly.
+          printf 'android.enableMinifyInReleaseBuilds=true\n' >> android/gradle.properties
+          printf 'android.enableShrinkResourcesInReleaseBuilds=true\n' >> android/gradle.properties
 
       - name: Cache Gradle
         uses: actions/cache@v4
