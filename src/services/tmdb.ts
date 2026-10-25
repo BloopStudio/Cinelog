@@ -160,30 +160,35 @@ export function shuffle<T>(items: T[]): T[] {
   return shuffled;
 }
 
-export async function getTrending(): Promise<TMDBSearchResult[]> {
+export async function getTrending(): Promise<{ movies: TMDBSearchResult[]; tv: TMDBSearchResult[] }> {
   // Trending is the same for everyone all week, so pull a couple of pages
   // and shuffle them: without this, "À découvrir" would show the exact
-  // same handful of titles every time the app is opened.
-  const [page1, page2] = await Promise.all([
-    tmdbFetch<{ results: (TMDBSearchResult & { media_type: string })[] }>("/trending/all/week", {
-      page: "1",
-    }),
-    tmdbFetch<{ results: (TMDBSearchResult & { media_type: string })[] }>("/trending/all/week", {
-      page: "2",
-    }),
+  // same handful of titles every time the app is opened. Fetched per type
+  // (rather than one mixed /trending/all/week call) so filtering the
+  // discover screen to "Films" or "Séries" always has a full pool to draw
+  // from instead of whatever happened to survive the mix.
+  const [moviePage1, moviePage2, tvPage1, tvPage2] = await Promise.all([
+    tmdbFetch<{ results: TMDBSearchResult[] }>("/trending/movie/week", { page: "1" }),
+    tmdbFetch<{ results: TMDBSearchResult[] }>("/trending/movie/week", { page: "2" }),
+    tmdbFetch<{ results: TMDBSearchResult[] }>("/trending/tv/week", { page: "1" }),
+    tmdbFetch<{ results: TMDBSearchResult[] }>("/trending/tv/week", { page: "2" }),
   ]);
 
-  const combined = [...page1.results, ...page2.results].filter(
-    (item): item is TMDBSearchResult => item.media_type === "movie" || item.media_type === "tv"
-  );
+  function dedupeAndTag(results: TMDBSearchResult[], mediaType: MediaType): TMDBSearchResult[] {
+    const seen = new Set<number>();
+    const tagged = results
+      .filter((item) => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      })
+      .map((item) => ({ ...item, media_type: mediaType }));
+    return shuffle(tagged);
+  }
 
-  const seen = new Set<string>();
-  const deduped = combined.filter((item) => {
-    const key = `${item.media_type}-${item.id}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  return shuffle(deduped);
+  return {
+    movies: dedupeAndTag([...moviePage1.results, ...moviePage2.results], "movie"),
+    tv: dedupeAndTag([...tvPage1.results, ...tvPage2.results], "tv"),
+  };
 }
+

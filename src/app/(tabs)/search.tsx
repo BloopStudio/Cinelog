@@ -19,7 +19,7 @@ import { MovieCard } from "@/components/MovieCard";
 import { PersonCard } from "@/components/PersonCard";
 import { SkeletonMovieCard } from "@/components/Skeleton";
 import { useWatchlist } from "@/context/WatchlistContext";
-import { getTrending, searchMulti } from "@/services/tmdb";
+import { getTrending, searchMulti, shuffle } from "@/services/tmdb";
 import type { SearchResult, TMDBSearchResult } from "@/types";
 
 export default function SearchScreen() {
@@ -36,7 +36,7 @@ export default function SearchScreen() {
 
   useEffect(() => {
     getTrending()
-      .then((data) => setSuggestions(data.slice(0, 6)))
+      .then((data) => setSuggestions(shuffle([...data.movies.slice(0, 3), ...data.tv.slice(0, 3)])))
       .catch(() => {
         // silencieux : la recherche reste utilisable sans suggestions
       });

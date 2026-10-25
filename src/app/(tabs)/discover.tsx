@@ -28,6 +28,16 @@ const MEDIA_TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
   { value: "tv", label: "Séries" },
 ];
 
+function interleave<T>(a: T[], b: T[]): T[] {
+  const result: T[] = [];
+  const max = Math.max(a.length, b.length);
+  for (let i = 0; i < max; i++) {
+    if (i < a.length) result.push(a[i]);
+    if (i < b.length) result.push(b[i]);
+  }
+  return result;
+}
+
 function chunk<T>(items: T[], size: number): T[][] {
   const rows: T[][] = [];
   for (let i = 0; i < items.length; i += size) {
@@ -37,22 +47,32 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 function pickRecommendationSources(items: WatchlistItem[]): WatchlistItem[] {
-  const rated = [...items]
-    .filter((item) => item.status === "watched" && item.rating > 0)
-    .sort((a, b) => {
-      if (b.rating !== a.rating) return b.rating - a.rating;
-      const dateA = new Date(a.watchedAt ?? a.addedAt).getTime();
-      const dateB = new Date(b.watchedAt ?? b.addedAt).getTime();
-      return dateB - dateA;
-    });
+  // Picked separately per media type (each with its own 1-item floor) so a
+  // watchlist skewed toward one type still seeds enough of the other for
+  // the recommendation pool to cover both — a single combined top-N would
+  // often end up 100% movies (or 100% tv) whenever ratings lean that way.
+  function topRated(mediaType: MediaType): WatchlistItem[] {
+    const rated = items
+      .filter(
+        (item) => item.status === "watched" && item.rating > 0 && item.mediaType === mediaType
+      )
+      .sort((a, b) => {
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        const dateA = new Date(a.watchedAt ?? a.addedAt).getTime();
+        const dateB = new Date(b.watchedAt ?? b.addedAt).getTime();
+        return dateB - dateA;
+      });
 
-  if (rated.length === 0) return [];
+    if (rated.length === 0) return [];
 
-  const count = Math.min(
-    RECOMMENDATION_SOURCE_MAX,
-    Math.max(1, Math.ceil(rated.length * RECOMMENDATION_SOURCE_PERCENTILE))
-  );
-  return rated.slice(0, count);
+    const count = Math.min(
+      RECOMMENDATION_SOURCE_MAX,
+      Math.max(1, Math.ceil(rated.length * RECOMMENDATION_SOURCE_PERCENTILE))
+    );
+    return rated.slice(0, count);
+  }
+
+  return [...topRated("movie"), ...topRated("tv")];
 }
 
 async function loadRecommendationPool(sourceItems: WatchlistItem[]): Promise<TMDBSearchResult[]> {
@@ -72,7 +92,9 @@ async function loadRecommendationPool(sourceItems: WatchlistItem[]): Promise<TMD
 
 export default function DiscoverScreen() {
   const { items } = useWatchlist();
-  const [trending, setTrending] = useState<TMDBSearchResult[]>([]);
+  const [trending, setTrending] = useState<{ movies: TMDBSearchResult[]; tv: TMDBSearchResult[] }>(
+    { movies: [], tv: [] }
+  );
   const [isLoadingTrending, setIsLoadingTrending] = useState(true);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -90,7 +112,7 @@ export default function DiscoverScreen() {
   useEffect(() => {
     getTrending()
       .then(setTrending)
-      .catch(() => setTrending([]))
+      .catch(() => setTrending({ movies: [], tv: [] }))
       .finally(() => setIsLoadingTrending(false));
   }, []);
 
@@ -131,11 +153,13 @@ export default function DiscoverScreen() {
 
   const discoverItems = useMemo(() => {
     const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
-    return trending.filter(
-      (item) =>
-        !alreadyInList.has(`${item.media_type}-${item.id}`) &&
-        (mediaTypeFilter === "all" || item.media_type === mediaTypeFilter)
-    );
+    const pool =
+      mediaTypeFilter === "movie"
+        ? trending.movies
+        : mediaTypeFilter === "tv"
+          ? trending.tv
+          : interleave(trending.movies, trending.tv);
+    return pool.filter((item) => !alreadyInList.has(`${item.media_type}-${item.id}`));
   }, [trending, items, mediaTypeFilter]);
 
   // Pulled fresh from the pool (not re-shuffled) every time `items` changes,
