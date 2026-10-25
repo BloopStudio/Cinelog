@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, RefreshControl, Text, View, useWindowDimensions } from "react-native";
+import { FlatList, Pressable, RefreshControl, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -8,7 +8,7 @@ import { PosterTile } from "@/components/PosterTile";
 import { SkeletonPosterTile } from "@/components/Skeleton";
 import { useWatchlist } from "@/context/WatchlistContext";
 import { getRecommendations, getTrending, shuffle } from "@/services/tmdb";
-import type { TMDBSearchResult, WatchlistItem } from "@/types";
+import type { MediaType, TMDBSearchResult, WatchlistItem } from "@/types";
 
 const SCREEN_PADDING = 16;
 const TILE_GAP = 12;
@@ -19,6 +19,14 @@ const MIN_TILE_WIDTH = 100;
 const RECOMMENDATION_SOURCE_PERCENTILE = 0.03;
 const RECOMMENDATION_SOURCE_MAX = 15;
 const RECOMMENDATION_COUNT = 9;
+
+type MediaTypeFilter = "all" | MediaType;
+
+const MEDIA_TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
+  { value: "all", label: "Tout" },
+  { value: "movie", label: "Films" },
+  { value: "tv", label: "Séries" },
+];
 
 function chunk<T>(items: T[], size: number): T[][] {
   const rows: T[][] = [];
@@ -69,6 +77,7 @@ export default function DiscoverScreen() {
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [recommendedPool, setRecommendedPool] = useState<TMDBSearchResult[]>([]);
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const { width } = useWindowDimensions();
 
   const numColumns = Math.max(
@@ -122,8 +131,12 @@ export default function DiscoverScreen() {
 
   const discoverItems = useMemo(() => {
     const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
-    return trending.filter((item) => !alreadyInList.has(`${item.media_type}-${item.id}`));
-  }, [trending, items]);
+    return trending.filter(
+      (item) =>
+        !alreadyInList.has(`${item.media_type}-${item.id}`) &&
+        (mediaTypeFilter === "all" || item.media_type === mediaTypeFilter)
+    );
+  }, [trending, items, mediaTypeFilter]);
 
   // Pulled fresh from the pool (not re-shuffled) every time `items` changes,
   // so adding a recommended title to the list drops it here and the next
@@ -131,9 +144,13 @@ export default function DiscoverScreen() {
   const recommended = useMemo(() => {
     const alreadyInList = new Set(items.map((item) => `${item.mediaType}-${item.id}`));
     return recommendedPool
-      .filter((item) => !alreadyInList.has(`${item.media_type}-${item.id}`))
+      .filter(
+        (item) =>
+          !alreadyInList.has(`${item.media_type}-${item.id}`) &&
+          (mediaTypeFilter === "all" || item.media_type === mediaTypeFilter)
+      )
       .slice(0, RECOMMENDATION_COUNT);
-  }, [recommendedPool, items]);
+  }, [recommendedPool, items, mediaTypeFilter]);
 
   const renderSkeletonRows = (count: number) => (
     <>
@@ -154,6 +171,29 @@ export default function DiscoverScreen() {
         <Text className="text-sm text-text-secondary">
           Films et séries tendance à ajouter à ta liste
         </Text>
+      </View>
+
+      <View className="flex-row gap-2 px-4 pb-3">
+        {MEDIA_TYPE_FILTERS.map(({ value, label }) => {
+          const active = mediaTypeFilter === value;
+          return (
+            <Pressable
+              key={value}
+              onPress={() => setMediaTypeFilter(value)}
+              className={`rounded-full border px-3.5 py-2 ${
+                active ? "border-accent bg-accent/10" : "border-border bg-transparent"
+              }`}
+            >
+              <Text
+                className={`text-xs font-semibold ${
+                  active ? "text-accent" : "text-text-secondary"
+                }`}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {isLoadingRecommendations ? (
