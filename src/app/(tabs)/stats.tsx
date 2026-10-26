@@ -135,8 +135,8 @@ export default function StatsScreen() {
       requestedRef.current.add(key);
 
       getDetails(item.mediaType, item.id)
-        .then((details) => {
-          const minutes = estimateRuntimeMinutes(details, item.mediaType);
+        .then((details) => estimateRuntimeMinutes(details, item.mediaType))
+        .then((minutes) => {
           if (minutes) setRuntimeMinutes(item.mediaType, item.id, minutes);
         })
         .catch(() => {

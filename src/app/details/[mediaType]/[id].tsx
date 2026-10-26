@@ -143,7 +143,7 @@ export default function DetailsScreen() {
         status,
         rating: 0,
         genres: details.genres?.map((genre) => genre.name) ?? [],
-        runtimeMinutes: estimateRuntimeMinutes(details, mediaType),
+        runtimeMinutes: await estimateRuntimeMinutes(details, mediaType),
       });
       showToast("Ajouté à ta liste");
     }
@@ -164,7 +164,7 @@ export default function DetailsScreen() {
         status: "to_watch",
         rating,
         genres: details.genres?.map((genre) => genre.name) ?? [],
-        runtimeMinutes: estimateRuntimeMinutes(details, mediaType),
+        runtimeMinutes: await estimateRuntimeMinutes(details, mediaType),
       });
     }
   };
@@ -184,7 +184,7 @@ export default function DetailsScreen() {
         status: "watching",
         rating: 0,
         genres: details.genres?.map((genre) => genre.name) ?? [],
-        runtimeMinutes: estimateRuntimeMinutes(details, mediaType),
+        runtimeMinutes: await estimateRuntimeMinutes(details, mediaType),
         currentSeason: season,
       });
     }

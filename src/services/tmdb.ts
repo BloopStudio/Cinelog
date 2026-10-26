@@ -128,17 +128,57 @@ export async function getRecommendations(
   return data.results.map((item) => ({ ...item, media_type: mediaType }));
 }
 
-// Movies carry their own runtime; TV shows don't (TMDB gives per-episode
-// runtime instead), so it's approximated as episodes × runtime, falling
-// back to a 45min/episode estimate when TMDB doesn't provide one.
-export function estimateRuntimeMinutes(
+// Fetches one season's episode list to read each episode's own runtime —
+// TMDB tracks these individually (a show's episodes often aren't all the
+// same length, e.g. a longer finale), unlike the single average exposed
+// on /tv/{id} itself. Nulls (unaired episodes, missing data) are dropped;
+// the caller fills the gap with the flat per-episode fallback.
+async function getSeasonEpisodeRuntimes(tvId: number, seasonNumber: number): Promise<number[]> {
+  const data = await tmdbFetch<{ episodes: { runtime: number | null }[] }>(
+    `/tv/${tvId}/season/${seasonNumber}`
+  );
+  return data.episodes
+    .map((episode) => episode.runtime)
+    .filter((runtime): runtime is number => typeof runtime === "number" && runtime > 0);
+}
+
+// Movies carry their own runtime directly. TV shows don't — this sums each
+// season's real per-episode runtimes (one extra TMDB call per season,
+// fetched once when the title is added) instead of multiplying the total
+// episode count by a single flat average, which flattens out shows with
+// notably longer or shorter episodes (specials, finales). Falls back to
+// the flat estimate per-episode or per-season wherever TMDB doesn't have
+// the detailed data (unaired episodes, very old/obscure shows, or no
+// seasons array at all on this TMDBDetails).
+export async function estimateRuntimeMinutes(
   details: TMDBDetails,
   mediaType: MediaType
-): number | undefined {
+): Promise<number | undefined> {
   if (mediaType === "movie") return details.runtime;
   if (!details.number_of_episodes) return undefined;
-  const perEpisode = details.episode_run_time?.[0] ?? 45;
-  return details.number_of_episodes * perEpisode;
+
+  const fallbackPerEpisode = details.episode_run_time?.[0] ?? 45;
+  const seasons = details.seasons?.filter((season) => season.season_number > 0) ?? [];
+
+  if (seasons.length === 0) {
+    return details.number_of_episodes * fallbackPerEpisode;
+  }
+
+  const seasonTotals = await Promise.all(
+    seasons.map(async (season) => {
+      try {
+        const runtimes = await getSeasonEpisodeRuntimes(details.id, season.season_number);
+        if (runtimes.length === 0) return season.episode_count * fallbackPerEpisode;
+        const knownTotal = runtimes.reduce((sum, runtime) => sum + runtime, 0);
+        const missingEpisodes = Math.max(0, season.episode_count - runtimes.length);
+        return knownTotal + missingEpisodes * fallbackPerEpisode;
+      } catch {
+        return season.episode_count * fallbackPerEpisode;
+      }
+    })
+  );
+
+  return seasonTotals.reduce((sum, total) => sum + total, 0);
 }
 
 // The other films in a movie's franchise (e.g. Divergente 2, Divergente 3
